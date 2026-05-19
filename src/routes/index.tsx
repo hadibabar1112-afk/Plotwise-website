@@ -17,14 +17,6 @@ import { Creators } from "@/components/site/Creators";
 
 export const Route = createFileRoute("/")({
   component: Index,
-  head: () => ({
-    meta: [
-      { title: "PlotWise — Turning Attention Into Action" },
-      { name: "description", content: "Creator-led growth systems for beauty and beauty-adjacent e-commerce brands ready to scale. Research-led, performance-driven UGC." },
-      { property: "og:title", content: "PlotWise — Turning Attention Into Action" },
-      { property: "og:description", content: "Creator-led growth systems for beauty brands ready to scale." },
-    ],
-  }),
 });
 
 function Index() {
