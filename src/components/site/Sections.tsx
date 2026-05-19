@@ -148,7 +148,7 @@ export function Work() {
           <h2 className="font-display text-[40px] sm:text-[48px] lg:text-[54px] leading-[1.05] tracking-[-0.03em] font-normal text-foreground mt-3 text-balance">
             <span className="font-serif italic text-brand-deep" style={{ fontSize: "1.05em" }}>Case studies</span> that speak for themselves.
           </h2>
-          <div className="mt-7 flex justify-center">
+          <div className="mt-7 hidden lg:flex justify-center">
             <a
               href="/contact"
               target="_blank"
@@ -172,6 +172,20 @@ export function Work() {
               <WorkCard item={it} onClick={() => setOpenKey(keyFor(it.name))} />
             </Reveal>
           ))}
+        </div>
+
+        <div className="mt-8 flex lg:hidden justify-center">
+          <a
+            href="/contact"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center gap-2 rounded-full bg-brand-deep text-background pl-6 pr-2 h-[52px] text-[14px] font-medium shadow-[0_12px_28px_-12px_rgba(15,79,74,0.5)] transition-all hover:bg-brand-dark hover:-translate-y-0.5"
+          >
+            Apply to Work With Us
+            <span className="ml-1 h-9 w-9 rounded-full bg-background text-brand-deep flex items-center justify-center transition-transform group-hover:translate-x-0.5">
+              <ArrowUpRight className="h-4 w-4" />
+            </span>
+          </a>
         </div>
       </div>
       <CaseStudyPopup

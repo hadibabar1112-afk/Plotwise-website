@@ -30,8 +30,8 @@ function Index() {
         <HowItWorks />
         <DualHook />
         <Work />
-        <WhyItWorks />
         <Creators />
+        <WhyItWorks />
         <MidCTA />
         <FAQ />
         <Apply />
