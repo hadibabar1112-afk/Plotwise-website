@@ -1,19 +1,18 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Map step IDs to human-readable labels
 const LABELS: Record<string, string> = {
-  name:              "Full Name",
-  email:             "Email Address",
-  brandName:         "Brand Name",
-  websiteUrl:        "Website URL",
-  handles:           "Instagram & TikTok Handles",
-  category:          "Primary Product Category",
-  adSpend:           "Monthly Ad Spend Range",
-  platforms:         "Platforms Running Paid Ads",
-  creativeHandling:  "How They Handle Creative",
-  challenge:         "Biggest Creative Challenge",
+  name:             "Full Name",
+  email:            "Email Address",
+  brandName:        "Brand Name",
+  websiteUrl:       "Website URL",
+  handles:          "Instagram & TikTok Handles",
+  category:         "Primary Product Category",
+  adSpend:          "Monthly Ad Spend Range",
+  platforms:        "Platforms Running Paid Ads",
+  creativeHandling: "How They Handle Creative",
+  challenge:        "Biggest Creative Challenge",
 };
 
 function formatAnswer(
@@ -22,13 +21,11 @@ function formatAnswer(
   otherText: Record<string, string>
 ): string {
   if (!value || (Array.isArray(value) && value.length === 0)) return "—";
-
   if (Array.isArray(value)) {
     return value
       .map((v) => (v === "Other" && otherText[id] ? `Other: ${otherText[id]}` : v))
       .join(", ");
   }
-
   if (value === "Other" && otherText[id]) return `Other: ${otherText[id]}`;
   return value;
 }
@@ -37,7 +34,7 @@ function buildEmailHtml(
   answers: Record<string, string | string[]>,
   otherText: Record<string, string>
 ): string {
-  const brandName = (answers.brandName as string) || "Unknown Brand";
+  const brandName  = (answers.brandName as string) || "Unknown Brand";
   const submitterName = (answers.name as string) || "";
   const replyEmail = (answers.email as string) || "";
 
@@ -115,46 +112,45 @@ function buildEmailHtml(
 </html>`;
 }
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Only allow POST
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  let body: { answers: Record<string, string | string[]>; otherText: Record<string, string> };
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+  // Guard: API key must be present
+  if (!process.env.RESEND_API_KEY) {
+    console.error("RESEND_API_KEY is not set");
+    return res.status(500).json({ error: "Email service not configured" });
   }
 
-  const { answers, otherText } = body;
-  const brandName = (answers.brandName as string) || "Unknown Brand";
-  const replyEmail = answers.email as string | undefined;
+  const { answers, otherText } = req.body as {
+    answers: Record<string, string | string[]>;
+    otherText: Record<string, string>;
+  };
+
+  if (!answers) {
+    return res.status(400).json({ error: "Missing answers" });
+  }
+
+  const brandName  = (answers.brandName as string) || "Unknown Brand";
+  const replyEmail = (answers.email as string) || undefined;
 
   try {
-    await resend.emails.send({
-      from: "PlotWise Contact Form <onboarding@resend.dev>",
-      to: "hadibabar2001@gmail.com",
-      replyTo: replyEmail || undefined,
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
+    const result = await resend.emails.send({
+      from:    "PlotWise Contact Form <onboarding@resend.dev>",
+      to:      "hadibabar2001@gmail.com",
+      replyTo: replyEmail,
       subject: `New PlotWise Inquiry — ${brandName}`,
-      html: buildEmailHtml(answers, otherText),
+      html:    buildEmailHtml(answers, otherText ?? {}),
     });
 
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.log("Resend result:", JSON.stringify(result));
+    return res.status(200).json({ success: true });
   } catch (err) {
     console.error("Resend error:", err);
-    return new Response(JSON.stringify({ error: "Failed to send email" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return res.status(500).json({ error: "Failed to send email" });
   }
 }

@@ -176,16 +176,29 @@ export function ContactForm() {
       // Final step — send email then show thank-you
       setSending(true);
       setSendError(null);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000); // 15 s hard cap
       try {
         const res = await fetch("/api/contact", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ answers, otherText }),
+          signal: controller.signal,
         });
-        if (!res.ok) throw new Error("server error");
+        clearTimeout(timeout);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error((data as { error?: string }).error || "server error");
+        }
         setSubmitted(true);
-      } catch {
-        setSendError("Something went wrong sending your submission. Please try again.");
+      } catch (err) {
+        clearTimeout(timeout);
+        const isTimeout = err instanceof Error && err.name === "AbortError";
+        setSendError(
+          isTimeout
+            ? "Request timed out — please check your connection and try again."
+            : "Something went wrong sending your submission. Please try again."
+        );
       } finally {
         setSending(false);
       }
