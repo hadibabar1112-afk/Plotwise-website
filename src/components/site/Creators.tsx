@@ -32,9 +32,9 @@ const creators: Creator[] = [
     niches: ["Skincare", "Beauty", "Haircare"],
     quote: "“Great content doesn't look like an ad. It looks like something you'd send to a friend.”",
     videos: [
-      { src: "/creators/alina/1.mp4", poster: "/creators/alina/1.jpg" },
-      { src: "/creators/alina/2.mp4", poster: "/creators/alina/2.jpg" },
-      { src: "/creators/alina/3.mp4", poster: "/creators/alina/3.jpg" },
+      { src: "/creators/alina/1.mp4", poster: "/creators/alina/1.webp" },
+      { src: "/creators/alina/2.mp4", poster: "/creators/alina/2.webp" },
+      { src: "/creators/alina/3.mp4", poster: "/creators/alina/3.webp" },
     ],
   },
   {
@@ -177,7 +177,7 @@ export function Creators() {
           >
             <div className="relative w-[110px] h-[110px] mx-auto mb-4">
               <div className="w-[110px] h-[110px] rounded-full overflow-hidden border-[3px] border-background shadow-[0_8px_22px_-10px_rgba(19,24,24,0.25)]">
-                <img src={c.avatar} alt={c.name} className="w-full h-full object-cover" />
+                <img src={c.avatar} alt={c.name} className="w-full h-full object-cover" loading="lazy" />
               </div>
               <div className="absolute right-1 bottom-1 w-[26px] h-[26px] rounded-full bg-brand-dark text-background grid place-items-center shadow-[0_0_0_3px_var(--background)]">
                 <Check className="h-3 w-3" strokeWidth={2.4} />
@@ -283,7 +283,7 @@ export function Creators() {
                       src={v.src}
                       poster={v.poster}
                       playsInline
-                      preload="auto"
+                      preload="metadata"
                       onEnded={() => setPlayingIdx((p) => (p === i ? null : p))}
                       onPause={() => setPlayingIdx((p) => (p === i ? null : p))}
                       className="absolute inset-0 w-full h-full object-cover"

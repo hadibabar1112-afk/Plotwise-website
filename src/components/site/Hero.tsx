@@ -7,6 +7,20 @@ import creator2 from "@/assets/creator-2.jpg";
 import creator3 from "@/assets/creator-3.jpg";
 import creator4 from "@/assets/creator-4.jpg";
 
+/** True on phones/small tablets — avoids downloading 10 MB of hero videos on mobile */
+function useIsMobile() {
+  const [mobile, setMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return mobile;
+}
+
 const rotatingWords = ["Belief", "Conversion", "Growth", "Resonance"];
 
 function ReelCard({
@@ -16,6 +30,7 @@ function ReelCard({
   views,
   video,
   poster,
+  isMobile,
 }: {
   src: string;
   delay: number;
@@ -23,13 +38,16 @@ function ReelCard({
   views: string;
   video?: string;
   poster?: string;
+  isMobile?: boolean;
 }) {
+  // On mobile: skip video entirely — show the poster/image to save ~2–3 MB per card
+  const showVideo = video && !isMobile;
   return (
     <div
       className="relative aspect-[9/16] rounded-[28px] overflow-hidden ring-1 ring-foreground/10 shadow-[0_30px_80px_-30px_rgba(0,98,92,0.45)] animate-float isolate"
       style={{ animationDelay: `${delay}s`, clipPath: "inset(0 round 28px)" }}
     >
-      {video ? (
+      {showVideo ? (
         <video
           src={video}
           poster={poster}
@@ -37,11 +55,16 @@ function ReelCard({
           muted
           loop
           playsInline
-          preload="auto"
+          preload="metadata"
           className="absolute inset-0 h-full w-full object-cover rounded-[28px]"
         />
       ) : (
-        <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <img
+          src={poster ?? src}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="lazy"
+        />
       )}
       {/* gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10" />
@@ -76,6 +99,7 @@ function ReelCard({
 }
 
 export function Hero() {
+  const isMobile = useIsMobile();
   const [wordIdx, setWordIdx] = useState(0);
   const [text, setText] = useState("");
   const [phase, setPhase] = useState<"typing" | "pausing" | "deleting">("typing");
@@ -239,12 +263,12 @@ export function Hero() {
           <div className="lg:col-span-5 relative order-1 lg:order-2">
             <div className="relative grid grid-cols-2 gap-3.5 max-w-[392px] mx-auto">
               <div className="space-y-3.5 pt-8">
-                <ReelCard src={reel1} video="/videos/reel-1.mp4" poster="/videos/reel-1.jpg" delay={0} label="lumeskin" views="284K" />
-                <ReelCard src={reel3} video="/videos/reel-2.mp4" poster="/videos/reel-2.jpg" delay={1.2} label="atelierbeaute" views="1.2M" />
+                <ReelCard src={reel1} video="/videos/reel-1.mp4" poster="/videos/reel-1.jpg" delay={0} label="lumeskin" views="284K" isMobile={isMobile} />
+                <ReelCard src={reel3} video="/videos/reel-2.mp4" poster="/videos/reel-2.jpg" delay={1.2} label="atelierbeaute" views="1.2M" isMobile={isMobile} />
               </div>
               <div className="space-y-3.5">
-                <ReelCard src={reel2} video="/videos/reel-3.mp4" poster="/videos/reel-3.jpg" delay={0.6} label="dewdaily" views="612K" />
-                <ReelCard src={reel2} video="/videos/reel-4.mp4" poster="/videos/reel-4.jpg" delay={1.8} label="glowritual" views="892K" />
+                <ReelCard src={reel2} video="/videos/reel-3.mp4" poster="/videos/reel-3.jpg" delay={0.6} label="dewdaily" views="612K" isMobile={isMobile} />
+                <ReelCard src={reel2} video="/videos/reel-4.mp4" poster="/videos/reel-4.jpg" delay={1.8} label="glowritual" views="892K" isMobile={isMobile} />
               </div>
             </div>
           </div>

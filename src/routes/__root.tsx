@@ -1,5 +1,6 @@
 import { Outlet, Link, createRootRoute } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
+import { Preloader } from "@/components/site/Preloader";
 
 function NotFoundComponent() {
   return (
@@ -31,6 +32,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <>
+      <Preloader />
       <Outlet />
       <Toaster position="top-center" />
     </>

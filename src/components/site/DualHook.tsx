@@ -300,7 +300,7 @@ function HookCard({
         </div>
       )}
       <div className="relative rounded-[18px] bg-[#1A1A1A] aspect-[9/14] overflow-hidden shadow-[0_16px_36px_-18px_rgba(19,24,24,0.35)]">
-        <img src={src} alt="" className="w-full h-full object-cover opacity-85" />
+        <img src={src} alt="" className="w-full h-full object-cover opacity-85" loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/10 to-black/65" />
         <div className="absolute top-3 left-3 z-[3] inline-flex items-center gap-1.5 text-[10px] tracking-[0.18em] uppercase font-medium px-2 py-1 rounded-full bg-background/90 text-foreground">
           <span className={`h-1.5 w-1.5 rounded-full ${dotColor}`} />

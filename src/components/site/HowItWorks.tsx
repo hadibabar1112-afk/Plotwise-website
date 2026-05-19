@@ -91,7 +91,7 @@ function Slide1({ active }: { active: boolean }) {
       <div className="absolute inset-8 grid grid-rows-[auto_1fr] gap-4">
         <div className="relative grid grid-cols-[auto_1fr_auto] items-center gap-5 px-6 py-5 bg-gradient-to-br from-white to-brand-mist/30 border border-foreground/10 rounded-2xl shadow-sm overflow-hidden">
           <div className="w-[68px] h-[68px] rounded-full overflow-hidden border-[2.5px] border-white ring-1 ring-brand-teal/40 shadow-md flex-none">
-            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&q=85" alt="" className="w-full h-full object-cover" />
+            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&q=85" alt="" className="w-full h-full object-cover" loading="lazy" />
           </div>
           <div className="flex flex-col gap-1.5 min-w-0">
             <div className="text-[22px] font-semibold tracking-tight leading-tight">Maya, 28</div>
@@ -184,7 +184,7 @@ function Slide3({ active }: { active: boolean }) {
           {pairs.map((p, i) => (
             <div key={i} className={`grid grid-cols-[1fr_28px_1fr] items-center gap-2.5 transition-all duration-500 ${active ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`} style={{ transitionDelay: active ? `${150 * i}ms` : "0ms" }}>
               <div className="flex items-center gap-2.5 bg-white border border-foreground/10 rounded-xl px-3 py-2 shadow-sm">
-                <div className="w-[30px] h-[30px] rounded-full overflow-hidden flex-none"><img src={p.img} alt="" className="w-full h-full object-cover" /></div>
+                <div className="w-[30px] h-[30px] rounded-full overflow-hidden flex-none"><img src={p.img} alt="" className="w-full h-full object-cover" loading="lazy" /></div>
                 <div>
                   <div className="text-[12.5px] font-medium">{p.nm}</div>
                   <div className="text-[10.5px] text-foreground/60">{p.niche}</div>
