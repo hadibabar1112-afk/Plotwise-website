@@ -113,16 +113,12 @@ function buildEmailHtml(
 </html>`;
 }
 
+const SHEET_WEBHOOK =
+  "https://script.google.com/macros/s/AKfycbwcmds6FMmQyVFly9yqoLAOWgid0bygzifcCoS5DOzAMeODVmccgSwXKBDN696IeJXj6g/exec";
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Only allow POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  // Guard: API key must be present
-  if (!process.env.RESEND_API_KEY) {
-    console.error("RESEND_API_KEY is not set");
-    return res.status(500).json({ error: "Email service not configured" });
   }
 
   const { answers, otherText } = req.body as {
@@ -136,24 +132,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const brandName  = (answers.brandName as string) || "Unknown Brand";
   const rawEmail   = (answers.email as string) || "";
-  // Only pass replyTo if it's a syntactically valid email — Resend rejects anything else
   const replyEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) ? rawEmail : undefined;
 
+  // ── 1. Google Sheets (primary — must succeed) ──────────────────────────────
   try {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-
-    const result = await resend.emails.send({
-      from:    "PlotWise Contact Form <onboarding@resend.dev>",
-      to:      "hadibabar1112@gmail.com",
-      replyTo: replyEmail,
-      subject: `New PlotWise Inquiry — ${brandName}`,
-      html:    buildEmailHtml(answers, otherText ?? {}),
+    const sheetRes = await fetch(SHEET_WEBHOOK, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ answers, otherText: otherText ?? {} }),
     });
-
-    console.log("Resend result:", JSON.stringify(result));
-    return res.status(200).json({ success: true });
+    const sheetData = await sheetRes.json();
+    console.log("Sheet result:", JSON.stringify(sheetData));
   } catch (err) {
-    console.error("Resend error:", err);
-    return res.status(500).json({ error: "Failed to send email" });
+    console.error("Sheet error:", err);
+    return res.status(500).json({ error: "Failed to save to Google Sheets" });
   }
+
+  // ── 2. Resend email (best-effort — won't fail the response if it errors) ───
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const result = await resend.emails.send({
+        from:    "PlotWise Contact Form <onboarding@resend.dev>",
+        to:      "hadibabar1112@gmail.com",
+        replyTo: replyEmail,
+        subject: `New PlotWise Inquiry — ${brandName}`,
+        html:    buildEmailHtml(answers, otherText ?? {}),
+      });
+      console.log("Resend result:", JSON.stringify(result));
+    } catch (err) {
+      // Log but don't block — sheet already saved the data
+      console.error("Resend error (non-fatal):", err);
+    }
+  }
+
+  return res.status(200).json({ success: true });
 }
