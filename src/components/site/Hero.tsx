@@ -58,7 +58,7 @@ function ReelCard({
           muted
           loop
           playsInline
-          preload="auto"
+          preload="none"
           className="absolute inset-0 h-full w-full object-cover rounded-[28px]"
         />
       ) : (
@@ -176,6 +176,8 @@ export function Hero() {
                       alt=""
                       className="absolute inset-0 h-full w-full object-cover"
                       draggable={false}
+                      loading="eager"
+                      fetchPriority="high"
                     />
                   </span>
                 ))}
