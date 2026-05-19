@@ -328,7 +328,7 @@ export function HowItWorks() {
                 </p>
                 {i === 3 && (
                   <a
-                    href="#apply"
+                    href="/contact" target="_blank" rel="noopener noreferrer"
                     className="hidden lg:inline-flex mt-6 group items-center gap-2 rounded-full text-background pl-6 pr-2 h-[52px] py-2 text-[14px] font-medium transition-all shadow-[0_10px_30px_-10px_rgba(32,119,113,0.55)] hover:shadow-[0_14px_34px_-10px_rgba(32,119,113,0.7)] hover:brightness-110 self-start"
                     style={{ background: "linear-gradient(135deg, #0F4F4A 0%, #207770 55%, #2C8A82 100%)" }}
                   >
@@ -344,7 +344,7 @@ export function HowItWorks() {
                 <MobileStageCanvas Slide={SlideC} label={s.canvasLabel} />
                 {i === 3 && (
                   <a
-                    href="#apply"
+                    href="/contact" target="_blank" rel="noopener noreferrer"
                     className="lg:hidden mt-5 group inline-flex items-center justify-center gap-2 rounded-full text-background pl-6 pr-2 h-[48px] py-2 text-[14px] font-medium transition-all shadow-[0_10px_30px_-10px_rgba(32,119,113,0.55)] self-start"
                     style={{ background: "linear-gradient(135deg, #0F4F4A 0%, #207770 55%, #2C8A82 100%)" }}
                   >

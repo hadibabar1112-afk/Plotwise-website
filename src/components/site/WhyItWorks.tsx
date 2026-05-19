@@ -193,7 +193,9 @@ export function WhyItWorks() {
             </div>
             <div className="relative z-[2] flex flex-col sm:flex-row sm:items-center items-stretch gap-4 sm:gap-5 flex-none">
               <a
-                href="#apply"
+                href="/contact"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="group inline-flex items-center justify-center gap-2.5 whitespace-nowrap bg-brand-dark text-background px-5 py-3.5 rounded-full text-[14px] font-medium shadow-[0_12px_24px_-12px_rgba(32,119,113,0.55)] transition-all duration-300 hover:bg-brand-deep hover:-translate-y-0.5"
               >
                 Apply to Work With Us

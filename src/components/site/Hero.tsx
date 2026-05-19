@@ -162,7 +162,9 @@ export function Hero() {
 
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <a
-                href="#apply"
+                href="/contact"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="group inline-flex items-center gap-2 rounded-full text-background pl-6 pr-2 h-[52px] py-2 text-[14px] font-medium transition-all shadow-[0_10px_30px_-10px_rgba(32,119,113,0.55)] hover:shadow-[0_14px_34px_-10px_rgba(32,119,113,0.7)] hover:brightness-110"
                 style={{ backgroundImage: "linear-gradient(135deg, hsl(var(--brand-deep, 175 55% 22%)) 0%, #207770 50%, #2C8A82 100%)", background: "linear-gradient(135deg, #0F4F4A 0%, #207770 55%, #2C8A82 100%)" }}
               >

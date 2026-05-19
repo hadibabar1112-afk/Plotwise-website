@@ -50,7 +50,9 @@ export function Nav() {
 
         <div className="flex items-center gap-3">
           <a
-            href="#apply"
+            href="/contact"
+            target="_blank"
+            rel="noopener noreferrer"
             className="hidden sm:inline-flex items-center gap-2 rounded-full bg-foreground text-background px-4 h-10 text-[13px] font-medium hover:bg-brand-dark transition-colors"
           >
             Apply to Work With Us
@@ -87,7 +89,9 @@ export function Nav() {
             </a>
           ))}
           <a
-            href="#apply"
+            href="/contact"
+            target="_blank"
+            rel="noopener noreferrer"
             onClick={() => setOpen(false)}
             className="mt-2 inline-flex w-fit items-center rounded-full bg-foreground text-background px-5 h-11 text-sm"
           >

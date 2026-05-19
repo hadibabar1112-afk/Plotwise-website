@@ -10,7 +10,9 @@ export function MidCTA() {
           ”
         </p>
         <a
-          href="#apply"
+          href="/contact"
+          target="_blank"
+          rel="noopener noreferrer"
           className="flex-none inline-flex items-center justify-center px-7 py-3 rounded-full border border-background/70 text-background text-[14px] font-medium transition-colors hover:bg-background hover:text-brand-deep"
         >
           Fix This Now
