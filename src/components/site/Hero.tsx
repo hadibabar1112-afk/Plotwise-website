@@ -7,7 +7,7 @@ import creator2 from "@/assets/creator-2.jpg";
 import creator3 from "@/assets/creator-3.jpg";
 import creator4 from "@/assets/creator-4.jpg";
 
-/** True on phones/small tablets — avoids downloading 10 MB of hero videos on mobile */
+/** True on phones — selects the 360p mobile video instead of the 720p desktop one */
 function useIsMobile() {
   const [mobile, setMobile] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches
@@ -29,6 +29,7 @@ function ReelCard({
   label,
   views,
   video,
+  mobileVideo,
   poster,
   isMobile,
 }: {
@@ -37,25 +38,27 @@ function ReelCard({
   label: string;
   views: string;
   video?: string;
+  mobileVideo?: string;
   poster?: string;
   isMobile?: boolean;
 }) {
-  // On mobile: skip video entirely — show the poster/image to save ~2–3 MB per card
-  const showVideo = video && !isMobile;
+  // Mobile uses the 360p version (~350-670 KB each vs 2-3.6 MB).
+  // preload="auto" so they fully load during the 3.5 s preloader window.
+  const videoSrc = isMobile ? mobileVideo : video;
   return (
     <div
       className="relative aspect-[9/16] rounded-[28px] overflow-hidden ring-1 ring-foreground/10 shadow-[0_30px_80px_-30px_rgba(0,98,92,0.45)] animate-float isolate"
       style={{ animationDelay: `${delay}s`, clipPath: "inset(0 round 28px)" }}
     >
-      {showVideo ? (
+      {videoSrc ? (
         <video
-          src={video}
+          src={videoSrc}
           poster={poster}
           autoPlay
           muted
           loop
           playsInline
-          preload="metadata"
+          preload="auto"
           className="absolute inset-0 h-full w-full object-cover rounded-[28px]"
         />
       ) : (
@@ -263,12 +266,12 @@ export function Hero() {
           <div className="lg:col-span-5 relative order-1 lg:order-2">
             <div className="relative grid grid-cols-2 gap-3.5 max-w-[392px] mx-auto">
               <div className="space-y-3.5 pt-8">
-                <ReelCard src={reel1} video="/videos/reel-1.mp4" poster="/videos/reel-1.jpg" delay={0} label="lumeskin" views="284K" isMobile={isMobile} />
-                <ReelCard src={reel3} video="/videos/reel-2.mp4" poster="/videos/reel-2.jpg" delay={1.2} label="atelierbeaute" views="1.2M" isMobile={isMobile} />
+                <ReelCard src={reel1} video="/videos/reel-1.mp4" mobileVideo="/videos/reel-1-mobile.mp4" poster="/videos/reel-1.jpg" delay={0} label="lumeskin" views="284K" isMobile={isMobile} />
+                <ReelCard src={reel3} video="/videos/reel-2.mp4" mobileVideo="/videos/reel-2-mobile.mp4" poster="/videos/reel-2.jpg" delay={1.2} label="atelierbeaute" views="1.2M" isMobile={isMobile} />
               </div>
               <div className="space-y-3.5">
-                <ReelCard src={reel2} video="/videos/reel-3.mp4" poster="/videos/reel-3.jpg" delay={0.6} label="dewdaily" views="612K" isMobile={isMobile} />
-                <ReelCard src={reel2} video="/videos/reel-4.mp4" poster="/videos/reel-4.jpg" delay={1.8} label="glowritual" views="892K" isMobile={isMobile} />
+                <ReelCard src={reel2} video="/videos/reel-3.mp4" mobileVideo="/videos/reel-3-mobile.mp4" poster="/videos/reel-3.jpg" delay={0.6} label="dewdaily" views="612K" isMobile={isMobile} />
+                <ReelCard src={reel2} video="/videos/reel-4.mp4" mobileVideo="/videos/reel-4-mobile.mp4" poster="/videos/reel-4.jpg" delay={1.8} label="glowritual" views="892K" isMobile={isMobile} />
               </div>
             </div>
           </div>

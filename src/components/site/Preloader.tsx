@@ -52,8 +52,21 @@ export function Preloader() {
       const img = new Image();
       img.src = src;
     });
-    // On desktop also hint the first reel video
-    if (window.innerWidth >= 768) {
+    // Hint reel videos so the browser starts fetching them during the 3.5 s window.
+    // Mobile gets the lightweight 360p versions (~350-670 KB each).
+    // Desktop gets the full 720p first video as a preload hint.
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    if (isMobile) {
+      // All 4 mobile videos total ~1.76 MB — should fully buffer before loader ends
+      [1, 2, 3, 4].forEach((n) => {
+        const link = document.createElement("link");
+        link.rel = "preload";
+        link.as = "video";
+        link.href = `/videos/reel-${n}-mobile.mp4`;
+        document.head.appendChild(link);
+      });
+    } else {
+      // Desktop: just hint the first video; the rest load progressively
       const link = document.createElement("link");
       link.rel = "preload";
       link.as = "video";
