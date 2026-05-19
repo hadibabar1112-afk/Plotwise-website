@@ -114,7 +114,7 @@ function buildEmailHtml(
 }
 
 const SHEET_WEBHOOK =
-  "https://script.google.com/macros/s/AKfycbwcmds6FMmQyVFly9yqoLAOWgid0bygzifcCoS5DOzAMeODVmccgSwXKBDN696IeJXj6g/exec";
+  "https://script.google.com/macros/s/AKfycbxhPgn3hiLvYeaIPKRZv7bkXH-9W44-5RdzQ5b04zD7Nc4-n7X2scZuqZUvM1cDjemblA/exec";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -153,7 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);
       const result = await resend.emails.send({
-        from:    "PlotWise Contact Form <onboarding@resend.dev>",
+        from:    "PlotWise <noreply@theplotwise.com>",
         to:      "raamish@theplotwise.com",
         replyTo: replyEmail,
         subject: `New PlotWise Inquiry — ${brandName}`,
