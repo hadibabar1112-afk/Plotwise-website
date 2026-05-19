@@ -27,8 +27,8 @@ function Index() {
         <Hero />
         <Problem />
         <UgcAnswer />
-        <Creators />
         <HowItWorks />
+        <Creators />
         <DualHook />
         <Work />
         <WhyItWorks />

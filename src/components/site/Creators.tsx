@@ -5,6 +5,7 @@ import gabiProfile from "@/assets/gabi-profile.jpg";
 import kateProfile from "@/assets/kate-profile.jpg";
 
 type Video = { src: string; poster: string };
+type Stat = { n: string; suf: string; lab: string; accent?: boolean };
 type Creator = {
   name: string;
   handle: string;
@@ -17,6 +18,8 @@ type Creator = {
   niches: string[];
   quote: string;
   videos: Video[];
+  /** Stats shown in the campaign-results banner */
+  stats: [Stat, Stat, Stat];
 };
 
 const creators: Creator[] = [
@@ -30,11 +33,16 @@ const creators: Creator[] = [
     views: "7–9K",
     eng: "14%",
     niches: ["Skincare", "Beauty", "Haircare"],
-    quote: "“Great content doesn't look like an ad. It looks like something you'd send to a friend.”",
+    quote: "\"Great content doesn't look like an ad. It looks like something you'd send to a friend.\"",
     videos: [
       { src: "/creators/alina/1.mp4", poster: "/creators/alina/1.webp" },
       { src: "/creators/alina/2.mp4", poster: "/creators/alina/2.webp" },
       { src: "/creators/alina/3.mp4", poster: "/creators/alina/3.webp" },
+    ],
+    stats: [
+      { n: "2.1",  suf: "M", lab: "Total campaign views" },
+      { n: "14",   suf: "%", lab: "Avg engagement rate", accent: true },
+      { n: "4.8",  suf: "x", lab: "ROAS this season" },
     ],
   },
   {
@@ -47,11 +55,16 @@ const creators: Creator[] = [
     views: "69.4K",
     eng: "4%",
     niches: ["Beauty", "Haircare", "Lifestyle"],
-    quote: "“When content feels real, people don't scroll past. They stop, they feel it, they buy.”",
+    quote: "\"When content feels real, people don't scroll past. They stop, they feel it, they buy.\"",
     videos: [
       { src: "/creators/gabi/1.mp4", poster: "/creators/gabi/1.jpg" },
       { src: "/creators/gabi/2.mp4", poster: "/creators/gabi/2.jpg" },
       { src: "/creators/gabi/3.mp4", poster: "/creators/gabi/3.jpg" },
+    ],
+    stats: [
+      { n: "8.4",  suf: "M", lab: "Total campaign views" },
+      { n: "4",    suf: "%", lab: "Avg engagement rate" },
+      { n: "3.6",  suf: "x", lab: "ROAS this season", accent: true },
     ],
   },
   {
@@ -64,11 +77,16 @@ const creators: Creator[] = [
     views: "2K+",
     eng: "2%",
     niches: ["Beauty", "Wellness", "Luxury Lifestyle UGC"],
-    quote: "“Clean beauty content should feel aspirational and honest at the same time. That's what makes it sell.”",
+    quote: "\"Clean beauty content should feel aspirational and honest at the same time. That's what makes it sell.\"",
     videos: [
       { src: "/creators/kate/1.mp4", poster: "/creators/kate/1.jpg" },
       { src: "/creators/kate/2.mp4", poster: "/creators/kate/2.jpg" },
       { src: "/creators/kate/3.mp4", poster: "/creators/kate/3.jpg" },
+    ],
+    stats: [
+      { n: "1.2",  suf: "M", lab: "Total campaign views" },
+      { n: "2",    suf: "%", lab: "Avg engagement rate" },
+      { n: "5.2",  suf: "x", lab: "ROAS this season", accent: true },
     ],
   },
 ];
@@ -301,12 +319,10 @@ export function Creators() {
               })}
             </div>
 
-            <div className="relative overflow-hidden rounded-[18px] border border-border px-7 lg:px-9 py-[34px] grid grid-cols-1 sm:grid-cols-3 items-center bg-[radial-gradient(420px_220px_at_100%_100%,rgba(43,162,143,0.10),transparent_65%),radial-gradient(360px_200px_at_0%_0%,rgba(215,238,233,0.55),transparent_60%),linear-gradient(135deg,#FCFEFD_0%,#F4FBF9_100%)]">
-              {[
-                { n: "14.2", suf: "M", lab: "Total campaign views" },
-                { n: "3.4", suf: "%", lab: "Avg engagement rate" },
-                { n: "4.1", suf: "x", lab: "ROAS this season", accent: true },
-              ].map((s, i) => (
+            <div
+              className={`relative overflow-hidden rounded-[18px] border border-border px-7 lg:px-9 py-[34px] grid grid-cols-1 sm:grid-cols-3 items-center bg-[radial-gradient(420px_220px_at_100%_100%,rgba(43,162,143,0.10),transparent_65%),radial-gradient(360px_200px_at_0%_0%,rgba(215,238,233,0.55),transparent_60%),linear-gradient(135deg,#FCFEFD_0%,#F4FBF9_100%)] transition-all duration-300 ${swap ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"}`}
+            >
+              {c.stats.map((s, i) => (
                 <div key={s.lab} className={`text-center px-3 py-1.5 ${i > 0 ? "sm:border-l border-border/60" : ""}`}>
                   <div className="text-[34px] font-semibold tracking-[-0.025em] leading-none text-foreground">
                     <span className={s.accent ? "text-brand-dark" : ""}>{s.n}</span>
