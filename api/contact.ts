@@ -36,7 +36,8 @@ function buildEmailHtml(
 ): string {
   const brandName  = (answers.brandName as string) || "Unknown Brand";
   const submitterName = (answers.name as string) || "";
-  const replyEmail = (answers.email as string) || "";
+  const rawReplyEmail = (answers.email as string) || "";
+  const replyEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawReplyEmail) ? rawReplyEmail : "";
 
   const rows = Object.entries(LABELS)
     .map(([id, label]) => {
@@ -134,7 +135,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const brandName  = (answers.brandName as string) || "Unknown Brand";
-  const replyEmail = (answers.email as string) || undefined;
+  const rawEmail   = (answers.email as string) || "";
+  // Only pass replyTo if it's a syntactically valid email — Resend rejects anything else
+  const replyEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) ? rawEmail : undefined;
 
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
