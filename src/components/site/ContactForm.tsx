@@ -10,7 +10,7 @@ interface StepDef {
   part: "A" | "B" | null;
   sectionLabel: string;
   id: string;
-  type: "text" | "url" | "select" | "multiselect" | "textarea";
+  type: "text" | "email" | "url" | "select" | "multiselect" | "textarea";
   question: string;
   placeholder?: string;
   hint?: string;
@@ -20,6 +20,20 @@ interface StepDef {
 
 const STEPS: StepDef[] = [
   // ── Section 1: Brand Basics ──
+  {
+    section: 1, part: null, sectionLabel: "Brand Basics",
+    id: "name", type: "text",
+    question: "What is your name?",
+    placeholder: "Your full name",
+    required: true,
+  },
+  {
+    section: 1, part: null, sectionLabel: "Brand Basics",
+    id: "email", type: "email",
+    question: "Write your email address",
+    placeholder: "you@brand.com",
+    required: true,
+  },
   {
     section: 1, part: null, sectionLabel: "Brand Basics",
     id: "brandName", type: "text",
@@ -42,7 +56,7 @@ const STEPS: StepDef[] = [
   },
   {
     section: 1, part: null, sectionLabel: "Brand Basics",
-    id: "category", type: "select",
+    id: "category", type: "multiselect",
     question: "Primary product category?",
     options: ["Skincare", "Haircare", "Makeup", "Bodycare", "Wellness", "Other"],
     required: true,
@@ -50,9 +64,9 @@ const STEPS: StepDef[] = [
   // ── Section 2A: Where You Are Now ──
   {
     section: 2, part: "A", sectionLabel: "Where You Are Now",
-    id: "adSpend", type: "select",
+    id: "adSpend", type: "multiselect",
     question: "Monthly ad spend range?",
-    options: ["Under $5k", "$5k – $15k", "$15k – $30k", "$30k – $75k", "$75k+"],
+    options: ["Under $5k", "$5k – $15k", "$15k – $30k", "$30k – $75k", "$75k+", "Other"],
   },
   {
     section: 2, part: "A", sectionLabel: "Where You Are Now",
@@ -79,9 +93,9 @@ const STEPS: StepDef[] = [
 const TOTAL = STEPS.length;
 
 const SECTIONS = [
-  { label: "Brand Basics",        range: [0, 3] as [number, number], center: 25 },
-  { label: "2A · Where You Are",  range: [4, 5] as [number, number], center: 62.5 },
-  { label: "2B · Where You Are",  range: [6, 7] as [number, number], center: 87.5 },
+  { label: "Brand Basics",        range: [0, 5] as [number, number], center: 25 },
+  { label: "2A · Where You Are",  range: [6, 7] as [number, number], center: 65 },
+  { label: "2B · Where You Are",  range: [8, 9] as [number, number], center: 85 },
 ];
 
 const slideVariants = {
@@ -209,7 +223,7 @@ export function ContactForm() {
     if (submitted) return;
     const t = setTimeout(() => {
       if (current.type === "textarea") textareaRef.current?.focus();
-      else if (current.type === "text" || current.type === "url") inputRef.current?.focus();
+      else if (current.type === "text" || current.type === "url" || current.type === "email") inputRef.current?.focus();
     }, 450);
     return () => clearTimeout(t);
   }, [step, current?.type, submitted]);
@@ -227,7 +241,7 @@ export function ContactForm() {
     const inputBase =
       "w-full bg-transparent border-b-2 outline-none text-xl sm:text-2xl pb-3 pt-1 transition-colors duration-300 font-display tracking-tight";
 
-    if (current.type === "text" || current.type === "url") {
+    if (current.type === "text" || current.type === "url" || current.type === "email") {
       return (
         <div className="w-full max-w-xl">
           <input
@@ -267,11 +281,15 @@ export function ContactForm() {
           <textarea
             ref={textareaRef}
             value={answer as string}
-            onChange={(e) => setAns(e.target.value)}
+            onChange={(e) => {
+              setAns(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
             placeholder={current.placeholder}
-            rows={4}
+            rows={1}
             className={`${inputBase} resize-none leading-relaxed`}
-            style={{ color: T.text, borderColor: T.border, caretColor: T.deep }}
+            style={{ color: T.text, borderColor: T.border, caretColor: T.deep, overflow: "hidden" }}
             onFocus={(e) => (e.currentTarget.style.borderColor = T.teal)}
             onBlur={(e) => (e.currentTarget.style.borderColor = T.border)}
           />
@@ -483,7 +501,7 @@ export function ContactForm() {
       {/* ── Progress bar ── */}
       <div className="fixed top-0 inset-x-0 z-50">
         <div className="h-[3px] relative" style={{ background: T.trackBg }}>
-          {[50, 75].map((pct) => (
+          {[60, 80].map((pct) => (
             <div
               key={pct}
               className="absolute top-0 bottom-0 w-px z-10"
