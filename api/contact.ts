@@ -141,7 +141,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const result = await resend.emails.send({
       from:    "PlotWise Contact Form <onboarding@resend.dev>",
-      to:      "hadibabar2001@gmail.com",
+      to:      "hadibabar1112@gmail.com",
       replyTo: replyEmail,
       subject: `New PlotWise Inquiry — ${brandName}`,
       html:    buildEmailHtml(answers, otherText ?? {}),
