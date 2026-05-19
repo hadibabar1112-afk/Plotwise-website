@@ -98,7 +98,8 @@ const SECTIONS = [
   { label: "2B · Where You Are",  range: [8, 9] as [number, number], center: 85 },
 ];
 
-const slideVariants = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const slideVariants: any = {
   enter: (d: number) => ({ y: d * 36, opacity: 0, filter: "blur(6px)" }),
   center: {
     y: 0, opacity: 1, filter: "blur(0px)",
@@ -142,6 +143,8 @@ export function ContactForm() {
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [otherText, setOtherText] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const otherInputRef = useRef<HTMLInputElement>(null);
@@ -165,10 +168,29 @@ export function ContactForm() {
     return true;
   })();
 
-  const goNext = useCallback(() => {
-    if (step < TOTAL - 1) { setDir(1); setStep((s) => s + 1); }
-    else setSubmitted(true);
-  }, [step]);
+  const goNext = useCallback(async () => {
+    if (step < TOTAL - 1) {
+      setDir(1);
+      setStep((s) => s + 1);
+    } else {
+      // Final step — send email then show thank-you
+      setSending(true);
+      setSendError(null);
+      try {
+        const res = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ answers, otherText }),
+        });
+        if (!res.ok) throw new Error("server error");
+        setSubmitted(true);
+      } catch {
+        setSendError("Something went wrong sending your submission. Please try again.");
+      } finally {
+        setSending(false);
+      }
+    }
+  }, [step, answers, otherText]);
 
   const goPrev = useCallback(() => {
     if (step > 0) { setDir(-1); setStep((s) => s - 1); }
@@ -558,34 +580,47 @@ export function ContactForm() {
 
               {/* Back + OK / Submit */}
               {(current.type !== "select" || answer === "Other") && (
-                <div className="pl-10 flex items-center gap-3">
-                  {step > 0 && (
+                <div className="pl-10 flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    {step > 0 && (
+                      <button
+                        onClick={goPrev}
+                        disabled={sending}
+                        className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-all duration-200"
+                        style={{ color: T.textMuted, background: "transparent", border: "none", cursor: sending ? "not-allowed" : "pointer" }}
+                        onMouseEnter={(e) => { if (!sending) e.currentTarget.style.color = T.text; }}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = T.textMuted)}
+                      >
+                        <ArrowLeft size={14} />
+                        Back
+                      </button>
+                    )}
                     <button
-                      onClick={goPrev}
-                      className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-all duration-200"
-                      style={{ color: T.textMuted, background: "transparent", border: "none", cursor: "pointer" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = T.text)}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = T.textMuted)}
+                      onClick={goNext}
+                      disabled={!canAdvance || sending}
+                      className="px-6 h-11 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2"
+                      style={{
+                        background: canAdvance && !sending ? T.deep : T.trackBg,
+                        color: canAdvance && !sending ? "#fff" : T.textFaint,
+                        cursor: canAdvance && !sending ? "pointer" : "not-allowed",
+                        boxShadow: canAdvance && !sending ? `0 8px 28px -8px rgba(0,98,92,0.35)` : "none",
+                      }}
+                      onMouseEnter={(e) => { if (canAdvance && !sending) e.currentTarget.style.background = T.dark; }}
+                      onMouseLeave={(e) => { if (canAdvance && !sending) e.currentTarget.style.background = T.deep; }}
                     >
-                      <ArrowLeft size={14} />
-                      Back
+                      {sending ? (
+                        <>
+                          <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="31.4 31.4" />
+                          </svg>
+                          Sending…
+                        </>
+                      ) : step === TOTAL - 1 ? "Submit" : "OK"}
                     </button>
+                  </div>
+                  {sendError && (
+                    <p className="text-sm" style={{ color: "#c0392b" }}>{sendError}</p>
                   )}
-                  <button
-                    onClick={goNext}
-                    disabled={!canAdvance}
-                    className="px-6 h-11 rounded-xl text-sm font-medium transition-all duration-200"
-                    style={{
-                      background: canAdvance ? T.deep : T.trackBg,
-                      color: canAdvance ? "#fff" : T.textFaint,
-                      cursor: canAdvance ? "pointer" : "not-allowed",
-                      boxShadow: canAdvance ? `0 8px 28px -8px rgba(0,98,92,0.35)` : "none",
-                    }}
-                    onMouseEnter={(e) => { if (canAdvance) e.currentTarget.style.background = T.dark; }}
-                    onMouseLeave={(e) => { if (canAdvance) e.currentTarget.style.background = T.deep; }}
-                  >
-                    {step === TOTAL - 1 ? "Submit" : "OK"}
-                  </button>
                 </div>
               )}
               {/* Back only — for auto-advance selects */}
