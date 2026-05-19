@@ -141,7 +141,7 @@ export default async function handler(req: Request): Promise<Response> {
     await resend.emails.send({
       from: "PlotWise Contact Form <onboarding@resend.dev>",
       to: "hadibabar2001@gmail.com",
-      reply_to: replyEmail || undefined,
+      replyTo: replyEmail || undefined,
       subject: `New PlotWise Inquiry — ${brandName}`,
       html: buildEmailHtml(answers, otherText),
     });
