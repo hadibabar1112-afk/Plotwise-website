@@ -388,7 +388,7 @@ function MobileProblemCarousel() {
     <div
       ref={trackRef}
       className="no-scrollbar -mr-5 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pr-5 select-none"
-      style={{ scrollBehavior: "auto", touchAction: "pan-x" }}
+      style={{ scrollBehavior: "auto", touchAction: "pan-x pan-y" }}
     >
       {cards.map((c, i) => (
         <article
