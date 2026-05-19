@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { toast } from "sonner";
 import { useReveal } from "@/hooks/use-reveal";
 import {
   Target,
@@ -513,58 +512,9 @@ export function FAQ() {
 /* ============== APPLY ============== */
 
 export function Apply() {
-  const [form, setForm] = useState({
-    brand: "",
-    url: "",
-    spend: "",
-    name: "",
-    email: "",
-    challenges: "",
-  });
-
-  const update = (k: keyof typeof form) => (v: string) =>
-    setForm((f) => ({ ...f, [k]: v }));
-
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (submitting) return;
-    setSubmitting(true);
-    const labels: Record<keyof typeof form, string> = {
-      brand: "Brand name",
-      url: "Website URL",
-      spend: "Monthly ad spend",
-      name: "Contact name",
-      email: "Email",
-      challenges: "Current creative challenges",
-    };
-    const payload: Record<string, string> = {
-      _subject: `New PlotWise application — ${form.brand || form.name || "Untitled"}`,
-      _captcha: "false",
-      _template: "table",
-    };
-    (Object.keys(labels) as (keyof typeof form)[]).forEach((k) => {
-      payload[labels[k]] = form[k] || "—";
-    });
-    try {
-      const res = await fetch("https://formsubmit.co/ajax/Raamish@theplotwise.com", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Failed");
-      toast.success("Application sent! We'll be in touch soon.");
-      setForm({ brand: "", url: "", spend: "", name: "", email: "", challenges: "" });
-    } catch {
-      toast.error("Couldn't send your application. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
-    <section id="apply" className="relative gradient-deep grain text-background py-28 lg:py-36 overflow-hidden">
+    <section id="apply" className="relative gradient-deep grain text-background py-28 lg:py-40 overflow-hidden">
+      {/* grid texture */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.05]">
         <svg className="w-full h-full" preserveAspectRatio="none">
           <defs>
@@ -575,95 +525,48 @@ export function Apply() {
           <rect width="100%" height="100%" fill="url(#grid2)" />
         </svg>
       </div>
+      {/* ambient glow */}
+      <div className="pointer-events-none absolute -top-32 -left-32 h-[500px] w-[500px] rounded-full bg-brand-teal/20 blur-[120px]" />
+      <div className="pointer-events-none absolute -bottom-32 -right-32 h-[500px] w-[500px] rounded-full bg-white/5 blur-[120px]" />
 
-      <div className="relative mx-auto max-w-5xl px-5 lg:px-10 grid lg:grid-cols-12 gap-12">
-        <div className="lg:col-span-5">
-          <div className="text-[11px] tracking-[0.2em] uppercase text-background/60">Apply</div>
-          <h2 className="display-xl text-[36px] lg:text-[52px] mt-3 text-balance">
-            Ready to build your growth system?
-          </h2>
-          <p className="mt-5 text-background/75 max-w-sm text-[15px]">
-            Tell us about your brand. We review every application personally and
-            respond within 24 hours.
-          </p>
-          <div className="mt-10 space-y-4 text-[13px] text-background/70">
-            {/* Trust pointers removed per request */}
-          </div>
+      <div className="relative mx-auto max-w-3xl px-5 lg:px-10 text-center">
+        <div className="text-[11px] tracking-[0.22em] uppercase text-background/55 mb-5">
+          Work with us
         </div>
+        <h2 className="font-display text-[40px] sm:text-[54px] lg:text-[64px] leading-[1.04] tracking-[-0.03em] font-normal text-balance">
+          Ready to turn attention{" "}
+          <span className="font-serif italic" style={{ fontSize: "1.05em" }}>
+            into growth?
+          </span>
+        </h2>
+        <p className="mt-6 text-[16px] leading-[1.7] text-background/70 max-w-[520px] mx-auto">
+          We work with 10 brands per season — deeply, not broadly. If you're ready
+          to build a system that compounds, let's talk.
+        </p>
 
-        <form
-          onSubmit={handleSubmit}
-          className="lg:col-span-7 rounded-3xl bg-background/[0.07] backdrop-blur-md ring-1 ring-background/15 p-7 lg:p-9 space-y-5"
-        >
-          <div className="grid sm:grid-cols-2 gap-5">
-            <Field label="Brand name" name="brand" value={form.brand} onChange={update("brand")} required />
-            <Field label="Website URL" name="url" placeholder="https://" value={form.url} onChange={update("url")} />
-          </div>
-          <div className="grid sm:grid-cols-2 gap-5">
-            <SelectField label="Monthly ad spend" name="spend" options={["< $10K", "$10K – $50K", "$50K – $250K", "$250K – $1M", "$1M+"]} value={form.spend} onChange={update("spend")} />
-            <Field label="Contact name" name="name" value={form.name} onChange={update("name")} required />
-          </div>
-          <Field label="Email" name="email" type="email" value={form.email} onChange={update("email")} required />
-          <div>
-            <label className="text-[11px] uppercase tracking-wider text-background/65 block mb-2">
-              Current creative challenges
-            </label>
-            <textarea
-              rows={4}
-              value={form.challenges}
-              onChange={(e) => update("challenges")(e.target.value)}
-              className="w-full bg-background/10 border border-background/15 focus:border-brand-teal rounded-xl px-4 py-3 text-[14px] text-background placeholder:text-background/40 outline-none focus:bg-background/15 transition-colors"
-              placeholder="What's not working? What does growth look like for you?"
-            />
-          </div>
-          <button
-            type="submit"
-            className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-brand-teal text-brand-near-black pl-6 pr-2 h-[52px] py-2 text-[14px] font-medium hover:bg-background transition-colors"
+        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a
+            href="/contact"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center gap-2 rounded-full bg-background text-brand-deep pl-7 pr-2 h-[54px] text-[14px] font-medium shadow-[0_16px_40px_-16px_rgba(0,0,0,0.4)] transition-all hover:bg-brand-teal hover:text-background"
           >
-            Submit Application
-            <span className="ml-1 h-9 w-9 rounded-full bg-brand-near-black text-background flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+            Connect with us
+            <span className="ml-1 h-10 w-10 rounded-full bg-brand-deep text-background flex items-center justify-center transition-transform group-hover:translate-x-0.5">
               <ArrowUpRight className="h-4 w-4" />
             </span>
-          </button>
-        </form>
+          </a>
+        </div>
+
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[12px] text-background/50 tracking-wide">
+          <span>10 brands per season</span>
+          <span className="hidden sm:block w-1 h-1 rounded-full bg-background/30" />
+          <span>Response within 24 hours</span>
+          <span className="hidden sm:block w-1 h-1 rounded-full bg-background/30" />
+          <span>No long-term lock-in</span>
+        </div>
       </div>
     </section>
-  );
-}
-
-function Field({ label, name, type = "text", placeholder, value, onChange, required }: { label: string; name: string; type?: string; placeholder?: string; value?: string; onChange?: (v: string) => void; required?: boolean }) {
-  return (
-    <div>
-      <label className="text-[11px] uppercase tracking-wider text-background/65 block mb-2">{label}</label>
-      <input
-        type={type}
-        name={name}
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange?.(e.target.value)}
-        required={required}
-        className="w-full bg-background/10 border border-background/15 focus:border-brand-teal rounded-xl px-4 h-12 text-[14px] text-background placeholder:text-background/40 outline-none focus:bg-background/15 transition-colors"
-      />
-    </div>
-  );
-}
-
-function SelectField({ label, name, options, value, onChange }: { label: string; name: string; options: string[]; value?: string; onChange?: (v: string) => void }) {
-  return (
-    <div>
-      <label className="text-[11px] uppercase tracking-wider text-background/65 block mb-2">{label}</label>
-      <select
-        name={name}
-        value={value ?? ""}
-        onChange={(e) => onChange?.(e.target.value)}
-        className="w-full bg-background/10 border border-background/15 focus:border-brand-teal rounded-xl px-4 h-12 text-[14px] text-background outline-none focus:bg-background/15 transition-colors appearance-none"
-      >
-        <option value="" disabled className="bg-brand-deep">Select range</option>
-        {options.map((o) => (
-          <option key={o} value={o} className="bg-brand-deep">{o}</option>
-        ))}
-      </select>
-    </div>
   );
 }
 
