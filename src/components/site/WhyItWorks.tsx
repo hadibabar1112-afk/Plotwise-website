@@ -125,9 +125,6 @@ export function WhyItWorks() {
               </p>
             </div>
 
-            <div className="absolute bottom-7 right-7 z-[3] h-9 w-9 rounded-full bg-background border border-foreground/10 grid place-items-center text-brand-dark transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:bg-brand-dark group-hover:text-background">
-              <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.7} />
-            </div>
           </article>
 
           {/* RIGHT column - 3 small cards */}

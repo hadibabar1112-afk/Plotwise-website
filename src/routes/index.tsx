@@ -28,10 +28,10 @@ function Index() {
         <Problem />
         <UgcAnswer />
         <HowItWorks />
-        <Creators />
         <DualHook />
         <Work />
         <WhyItWorks />
+        <Creators />
         <MidCTA />
         <FAQ />
         <Apply />
