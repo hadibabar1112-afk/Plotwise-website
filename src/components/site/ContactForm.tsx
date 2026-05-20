@@ -77,7 +77,7 @@ const STEPS: StepDef[] = [
   // ── Section 2B: Where You Are Now ──
   {
     section: 2, part: "B", sectionLabel: "Where You Are Now",
-    id: "creativeHandling", type: "select",
+    id: "creativeHandling", type: "multiselect",
     question: "How are you currently handling creative?",
     options: ["In-house", "Freelancers", "Agency", "Mix", "Nothing structured"],
   },
