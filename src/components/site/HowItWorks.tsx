@@ -265,9 +265,6 @@ export function HowItWorks() {
   const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
-    // Only needed on desktop where the sticky right card is visible
-    if (!window.matchMedia("(min-width: 1024px)").matches) return;
-
     const onScroll = () => {
       const target = window.innerHeight * 0.45;
       let bestIdx = 0;
@@ -309,7 +306,9 @@ export function HowItWorks() {
       <div className="max-w-[1280px] mx-auto pb-16 relative px-6 sm:px-10 lg:px-[116px]">
         <div className="grid lg:grid-cols-[1fr_1.05fr] gap-10 lg:gap-20 items-start relative mt-1 lg:mt-4">
           <div className="flex flex-col">
-            {stages.map((s, i) => (
+            {stages.map((s, i) => {
+              const SlideC = Slides[i];
+              return (
               <div
                 key={i}
                 ref={(el) => { blockRefs.current[i] = el; }}
@@ -341,24 +340,25 @@ export function HowItWorks() {
                     </span>
                   </a>
                 )}
+                {/* Mobile static stage card */}
+                <MobileStageCanvas Slide={SlideC} label={s.canvasLabel} />
+                {i === 3 && (
+                  <a
+                    href="/contact" target="_blank" rel="noopener noreferrer"
+                    className="lg:hidden mt-5 group inline-flex items-center justify-center gap-2 rounded-full text-background pl-6 pr-2 h-[48px] py-2 text-[14px] font-medium transition-all shadow-[0_10px_30px_-10px_rgba(32,119,113,0.55)] self-start"
+                    style={{ background: "linear-gradient(135deg, #0F4F4A 0%, #207770 55%, #2C8A82 100%)" }}
+                  >
+                    Start your growth system
+                    <span className="ml-1 h-8 w-8 rounded-full bg-background text-brand-deep flex items-center justify-center transition-transform group-hover:translate-x-0.5">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  </a>
+                )}
               </div>
-            ))}
-            {/* Mobile: single card after all stages, scrolls normally with section */}
-            <div className="lg:hidden mt-6">
-              <MobileStageCanvas Slide={Slides[0]} label={stages[0].canvasLabel} />
-            </div>
-            <a
-              href="/contact" target="_blank" rel="noopener noreferrer"
-              className="lg:hidden mt-5 group inline-flex items-center justify-center gap-2 rounded-full text-background pl-6 pr-2 h-[48px] py-2 text-[14px] font-medium transition-all shadow-[0_10px_30px_-10px_rgba(32,119,113,0.55)] self-start"
-              style={{ background: "linear-gradient(135deg, #0F4F4A 0%, #207770 55%, #2C8A82 100%)" }}
-            >
-              Start your growth system
-              <span className="ml-1 h-8 w-8 rounded-full bg-background text-brand-deep flex items-center justify-center transition-transform group-hover:translate-x-0.5">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                  <path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-            </a>
+              );
+            })}
           </div>
 
           <div className="hidden lg:block sticky self-start" style={{ top: 280 }}>
