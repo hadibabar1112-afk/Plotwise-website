@@ -23,8 +23,15 @@
     <meta name="twitter:title" content="PlotWise" />
     <meta name="twitter:description" content="Turning attention into growth. Creator-led growth systems for beauty brands ready to scale." />
     <meta name="twitter:image" content="https://plotwise-website.vercel.app/og-image.png" />
+  <style>
+    #hw-loader{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#F7FAF9;transition:opacity .25s ease}
+    #hw-loader.hw-fade{opacity:0;pointer-events:none}
+    @keyframes hw-spin{to{transform:rotate(360deg)}}
+    #hw-ring{width:56px;height:56px;border-radius:50%;border:3px solid #91CEBF;border-top-color:#00625C;animation:hw-spin .75s linear infinite}
+  </style>
   </head>
   <body>
+    <div id="hw-loader"><div id="hw-ring"></div></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
