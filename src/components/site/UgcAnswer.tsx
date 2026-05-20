@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
-const SECTION_BG = CSS.supports("color", "oklch(0 0 0)")
-  ? "linear-gradient(135deg, oklch(0.44 0.07 188) 0%, oklch(0.50 0.06 185) 60%, oklch(0.38 0.06 190) 100%)"
-  : "linear-gradient(135deg, #00625C 0%, #207771 60%, #1A5451 100%)";
+const SECTION_BG =
+  "linear-gradient(135deg, oklch(0.44 0.07 188) 0%, oklch(0.50 0.06 185) 60%, oklch(0.38 0.06 190) 100%)";
 
 export function UgcAnswer() {
   const ref = useRef<HTMLIFrameElement>(null);
