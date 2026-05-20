@@ -8,7 +8,8 @@ const W_LOGO =
 
 const VH = 338;
 const VW = 277;
-const FILL_DURATION = 3500; // 3.5 s fill animation = 3.5 s minimum display
+const FILL_DURATION_DESKTOP = 3500;
+const FILL_DURATION_MOBILE  = 2000;
 
 // Hero poster images to preload while the loader is visible
 const HERO_POSTERS = [
@@ -44,6 +45,21 @@ export function Preloader() {
 
   const startTs = useRef<number | null>(null);
   const raf = useRef<number | null>(null);
+  const duration = useRef(
+    typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches
+      ? FILL_DURATION_MOBILE
+      : FILL_DURATION_DESKTOP
+  );
+
+  // Dismiss the static HTML preloader now that React has mounted
+  useEffect(() => {
+    const loader = document.getElementById("hw-loader");
+    if (loader) {
+      loader.classList.add("hw-fade");
+      const t = setTimeout(() => loader.remove(), 300);
+      return () => clearTimeout(t);
+    }
+  }, []);
 
   // Kick off hero asset preloading immediately so resources are warm by the time
   // the loader dismisses and the hero section becomes visible.
@@ -78,14 +94,13 @@ export function Preloader() {
   useEffect(() => {
     function tick(ts: number) {
       if (!startTs.current) startTs.current = ts;
-      const t = Math.min((ts - startTs.current) / FILL_DURATION, 1);
+      const t = Math.min((ts - startTs.current) / duration.current, 1);
       const eased = easeInOut(t);
       setFillY(VH * (1 - eased));
       setWaveOff(ts * 0.042);
       if (t < 1) {
         raf.current = requestAnimationFrame(tick);
       } else {
-        // Animation complete at exactly 3.5 s — start exit fade
         setExiting(true);
         setTimeout(() => setGone(true), 750);
       }
