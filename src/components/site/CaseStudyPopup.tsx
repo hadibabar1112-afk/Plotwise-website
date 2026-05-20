@@ -97,6 +97,28 @@ export function CaseStudyPopup({
     return () => el.removeEventListener("wheel", handler);
   }, [phase, open]);
 
+  // Mobile: dragging down from scrollTop=0 collapses back to peek so the
+  // backdrop and close button become reachable
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !open) return;
+    let startY = 0;
+    const onTouchStart = (e: TouchEvent) => {
+      startY = e.touches[0].clientY;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (phase !== "full") return;
+      const dy = e.touches[0].clientY - startY;
+      if (el.scrollTop <= 0 && dy > 40) setPhase("peek");
+    };
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+    };
+  }, [phase, open]);
+
   if (!open) return null;
 
   const isVideo = (src: string) => /\.(mp4|webm|mov)(\?|$)/i.test(src);
