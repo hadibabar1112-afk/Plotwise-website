@@ -11,7 +11,4 @@ export default defineConfig({
     tailwindcss(),
     tsconfigPaths(),
   ],
-  build: {
-    target: ["chrome87", "firefox78", "safari14", "edge88"],
-  },
 });
