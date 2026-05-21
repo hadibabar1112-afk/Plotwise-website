@@ -209,7 +209,7 @@ const STEPS: StepDef[] = [
   { id: "profileLink", type: "platformlinks", question: "Drop your profile link(s)", hint: "One link per platform", required: true },
   { id: "followerCount", type: "select", question: "What's your follower count across platforms?", hint: "We work with all sizes — this just helps us match campaigns.", options: ["Under 5K", "5–25K", "25–100K", "100K+"], required: true },
   { id: "niche", type: "multiselect", question: "What do you primarily create?", hint: "Select all that apply", options: ["Beauty", "Skincare", "Haircare", "Makeup", "Wellness", "Lifestyle", "Fitness", "Other"], required: true },
-  { id: "ugcSamples", type: "textarea", question: "Link 2–3 of your best UGC samples", placeholder: "Paste your links here — drive links, public posts, or portfolios all work.", hint: "Specifically UGC/ad-style content, not just lifestyle posts.", required: true, rows: 4 },
+  { id: "ugcSamples", type: "textarea", question: "Link 2–3 of your best UGC samples", placeholder: "Paste links here…", hint: "UGC/ad-style content — drive links, public posts, or portfolios all work.", required: true, rows: 1 },
   { id: "contentFormats", type: "multiselect", question: "What content formats are you strongest at?", hint: "Select all that apply", options: ["Talking head", "Voiceover", "Demo & tutorial", "Unboxing", "Before & after", "Lifestyle B-roll", "Skits", "Static photos"], required: true },
   // Section 3: Experience & fit
   { id: "ageRange", type: "select", question: "Which age bracket do you fall into?", options: ["18–24", "25–34", "35–44", "45+"], required: true },
@@ -230,7 +230,7 @@ const STEPS: StepDef[] = [
   { id: "availability", type: "text", question: "How many campaigns could you realistically take on per month?", placeholder: "e.g. 2–3", hint: "Enter a number or range", required: true },
   { id: "turnaround", type: "select", question: "From product received → footage delivered, what can you commit to?", options: ["Under 5 days", "5–10 days", "10+ days"], required: true },
   { id: "campaigns", type: "multiselect", question: "What type of campaigns excite you?", hint: "Select all that apply", options: ["Paid UGC for ads", "Long-term brand partnerships", "High-volume creative testing", "Performance-driven content", "Narrative-driven storytelling", "Other"], required: true },
-  { id: "whyPlotwise", type: "textarea", question: "What made you want to join Plotwise?", placeholder: "Tell us in a few sentences…", hint: "Be as specific as you like", rows: 2 },
+  { id: "whyPlotwise", type: "textarea", question: "What made you want to join Plotwise?", placeholder: "Tell us in a few sentences…", hint: "Be as specific as you like", rows: 1 },
 ];
 
 const TOTAL = STEPS.length;
@@ -277,6 +277,7 @@ export function CreatorForm() {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [platformLinkErrors, setPlatformLinkErrors] = useState<Record<string, string>>({});
 
   // Phone dial code state
   const [phoneDialCode, setPhoneDialCode] = useState<CountryData>(DEFAULT_DIAL);
@@ -378,23 +379,31 @@ export function CreatorForm() {
       return null;
     }
 
-    // Platform links — URL + platform-specific check
+    // Platform links — per-field errors, auto-prepend https://
     if (current.type === "platformlinks") {
+      const newPlatformErrors: Record<string, string> = {};
+      let hasError = false;
       for (const platform of selectedPlatforms) {
-        const link = (platformLinkValues[platform] ?? "").trim();
-        if (!link) return `Please enter your ${platform} profile link.`;
-        if (!/^https?:\/\/.+/.test(link)) return `${platform} link must start with https:// — e.g. https://${platform.toLowerCase()}.com/yourhandle`;
+        const raw = (platformLinkValues[platform] ?? "").trim();
+        if (!raw) {
+          newPlatformErrors[platform] = `Please enter your ${platform} profile link.`;
+          hasError = true;
+          continue;
+        }
+        const link = /^https?:\/\//.test(raw) ? raw : `https://${raw}`;
         if (platform === "Instagram" && !link.includes("instagram.com")) {
-          return `That doesn't look like an Instagram link. Try: https://instagram.com/yourhandle`;
-        }
-        if (platform === "TikTok" && !link.includes("tiktok.com")) {
-          return `That doesn't look like a TikTok link. Try: https://tiktok.com/@yourhandle`;
-        }
-        if (platform === "YouTube" && !link.includes("youtube.com") && !link.includes("youtu.be")) {
-          return `That doesn't look like a YouTube link. Try: https://youtube.com/@yourchannel`;
+          newPlatformErrors[platform] = `Doesn't look like an Instagram link. Try: instagram.com/yourhandle`;
+          hasError = true;
+        } else if (platform === "TikTok" && !link.includes("tiktok.com")) {
+          newPlatformErrors[platform] = `Doesn't look like a TikTok link. Try: tiktok.com/@yourhandle`;
+          hasError = true;
+        } else if (platform === "YouTube" && !link.includes("youtube.com") && !link.includes("youtu.be")) {
+          newPlatformErrors[platform] = `Doesn't look like a YouTube link. Try: youtube.com/@yourchannel`;
+          hasError = true;
         }
       }
-      return null;
+      setPlatformLinkErrors(newPlatformErrors);
+      return hasError ? "__platform_errors__" : null;
     }
 
     // Country dropdown
@@ -424,7 +433,9 @@ export function CreatorForm() {
   const goNext = useCallback(async () => {
     const error = validateCurrentStep();
     if (error) {
-      setFieldErrors((prev) => ({ ...prev, [current.id]: error }));
+      if (error !== "__platform_errors__") {
+        setFieldErrors((prev) => ({ ...prev, [current.id]: error }));
+      }
       return;
     }
 
@@ -435,8 +446,10 @@ export function CreatorForm() {
       const profileLinkStr = selectedPlatforms
         .map((p) => {
           const label = p === "Other" && otherText["platform"] ? otherText["platform"] : p;
-          const link = (platformLinkValues[p] ?? "").trim();
-          return link ? `${label}: ${link}` : null;
+          const raw = (platformLinkValues[p] ?? "").trim();
+          if (!raw) return null;
+          const link = /^https?:\/\//.test(raw) ? raw : `https://${raw}`;
+          return `${label}: ${link}`;
         })
         .filter(Boolean)
         .join("\n");
@@ -606,51 +619,60 @@ export function CreatorForm() {
               >
                 <span style={{ fontSize: "20px", lineHeight: 1 }}>{phoneDialCode.flag}</span>
                 <span className="text-base font-mono tabular-nums" style={{ color: T.textSubtle }}>{phoneDialCode.dial}</span>
-                <ChevronDown size={13} style={{ color: T.textFaint }} className={`transition-transform ${phoneDialOpen ? "rotate-180" : ""}`} />
+                <motion.span animate={{ rotate: phoneDialOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                  <ChevronDown size={13} style={{ color: T.textFaint }} />
+                </motion.span>
               </button>
 
-              {phoneDialOpen && (
-                <div className="absolute top-full left-0 z-50 mt-1 rounded-xl shadow-2xl overflow-hidden"
-                  style={{ background: "#fff", border: `1px solid ${T.border}`, width: "280px" }}>
-                  {/* Search */}
-                  <div className="p-2.5" style={{ borderBottom: `1px solid ${T.border}` }}>
-                    <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg" style={{ background: T.optionBg }}>
-                      <Search size={13} style={{ color: T.textFaint }} />
-                      <input
-                        type="text"
-                        value={phoneDialSearch}
-                        onChange={(e) => setPhoneDialSearch(e.target.value)}
-                        placeholder="Search country or code…"
-                        className="flex-1 outline-none text-sm bg-transparent"
-                        style={{ color: T.text }}
-                        autoFocus
-                      />
+              <AnimatePresence>
+                {phoneDialOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scaleY: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scaleY: 1 }}
+                    exit={{ opacity: 0, y: -8, scaleY: 0.96 }}
+                    transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ transformOrigin: "top", background: "#fff", border: `1px solid ${T.border}`, width: "280px" }}
+                    className="absolute top-full left-0 z-50 mt-1 rounded-xl shadow-2xl overflow-hidden"
+                  >
+                    <div className="p-2.5" style={{ borderBottom: `1px solid ${T.border}` }}>
+                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg" style={{ background: T.optionBg }}>
+                        <Search size={13} style={{ color: T.textFaint }} />
+                        <input
+                          type="text"
+                          value={phoneDialSearch}
+                          onChange={(e) => setPhoneDialSearch(e.target.value)}
+                          placeholder="Search country or code…"
+                          className="flex-1 outline-none text-sm bg-transparent"
+                          style={{ color: T.text }}
+                          autoFocus
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="overflow-y-auto" style={{ maxHeight: "220px" }}>
-                    {filteredDials.length === 0 && (
-                      <p className="px-4 py-3 text-sm" style={{ color: T.textFaint }}>No results</p>
-                    )}
-                    {filteredDials.map((c) => (
-                      <button key={c.code} type="button"
-                        onClick={() => { setPhoneDialCode(c); setPhoneDialOpen(false); setPhoneDialSearch(""); }}
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-left transition-colors"
-                        style={{
-                          color: phoneDialCode.code === c.code ? T.deep : T.text,
-                          background: phoneDialCode.code === c.code ? "rgba(0,98,92,0.06)" : "transparent",
-                          fontWeight: phoneDialCode.code === c.code ? 600 : 400,
-                        }}
-                        onMouseEnter={(e) => { if (phoneDialCode.code !== c.code) e.currentTarget.style.background = T.optionBg; }}
-                        onMouseLeave={(e) => { if (phoneDialCode.code !== c.code) e.currentTarget.style.background = "transparent"; }}
-                      >
-                        <span>{c.flag}</span>
-                        <span className="flex-1 truncate">{c.name}</span>
-                        <span className="font-mono text-xs shrink-0" style={{ color: T.textFaint }}>{c.dial}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+                    <div className="overflow-y-auto" style={{ maxHeight: "220px" }}>
+                      {filteredDials.length === 0 && (
+                        <p className="px-4 py-3 text-sm" style={{ color: T.textFaint }}>No results</p>
+                      )}
+                      {filteredDials.map((c) => (
+                        <button key={c.code} type="button"
+                          onClick={() => { setPhoneDialCode(c); setPhoneDialOpen(false); setPhoneDialSearch(""); }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-left transition-colors"
+                          style={{
+                            color: phoneDialCode.code === c.code ? T.deep : T.text,
+                            background: phoneDialCode.code === c.code ? "rgba(0,98,92,0.06)" : "transparent",
+                            fontWeight: phoneDialCode.code === c.code ? 600 : 400,
+                          }}
+                          onMouseEnter={(e) => { if (phoneDialCode.code !== c.code) e.currentTarget.style.background = T.optionBg; }}
+                          onMouseLeave={(e) => { if (phoneDialCode.code !== c.code) e.currentTarget.style.background = "transparent"; }}
+                        >
+                          <span>{c.flag}</span>
+                          <span className="flex-1 truncate">{c.name}</span>
+                          <span className="font-mono text-xs shrink-0" style={{ color: T.textFaint }}>{c.dial}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Number input */}
@@ -681,7 +703,7 @@ export function CreatorForm() {
         c.name.toLowerCase().includes(countrySearch.toLowerCase())
       );
       return (
-        <div className="w-full max-w-xl" ref={countryDropdownRef}>
+        <div className="w-full max-w-xl relative" ref={countryDropdownRef}>
           <button
             type="button"
             onClick={() => { setCountryOpen((o) => !o); setCountrySearch(""); }}
@@ -700,50 +722,60 @@ export function CreatorForm() {
               )}
               <span>{selected || "Select your country"}</span>
             </span>
-            <ChevronDown size={20} style={{ color: T.textFaint }} className={`shrink-0 transition-transform ${countryOpen ? "rotate-180" : ""}`} />
+            <motion.span animate={{ rotate: countryOpen ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0">
+              <ChevronDown size={20} style={{ color: T.textFaint }} />
+            </motion.span>
           </button>
 
-          {countryOpen && (
-            <div className="mt-1 rounded-xl shadow-2xl overflow-hidden z-50 relative"
-              style={{ background: "#fff", border: `1px solid ${T.border}` }}>
-              <div className="p-2.5" style={{ borderBottom: `1px solid ${T.border}` }}>
-                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg" style={{ background: T.optionBg }}>
-                  <Search size={13} style={{ color: T.textFaint }} />
-                  <input
-                    type="text"
-                    value={countrySearch}
-                    onChange={(e) => setCountrySearch(e.target.value)}
-                    placeholder="Search country…"
-                    className="flex-1 outline-none text-sm bg-transparent"
-                    style={{ color: T.text }}
-                    autoFocus
-                  />
+          <AnimatePresence>
+            {countryOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, scaleY: 0.96 }}
+                animate={{ opacity: 1, y: 0, scaleY: 1 }}
+                exit={{ opacity: 0, y: -8, scaleY: 0.96 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                style={{ transformOrigin: "top", background: "#fff", border: `1px solid ${T.border}` }}
+                className="absolute top-full left-0 right-0 mt-1 z-50 rounded-xl shadow-2xl overflow-hidden"
+              >
+                <div className="p-2.5" style={{ borderBottom: `1px solid ${T.border}` }}>
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg" style={{ background: T.optionBg }}>
+                    <Search size={13} style={{ color: T.textFaint }} />
+                    <input
+                      type="text"
+                      value={countrySearch}
+                      onChange={(e) => setCountrySearch(e.target.value)}
+                      placeholder="Search country…"
+                      className="flex-1 outline-none text-sm bg-transparent"
+                      style={{ color: T.text }}
+                      autoFocus
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="overflow-y-auto" style={{ maxHeight: "240px" }}>
-                {filteredCountries.length === 0 && (
-                  <p className="px-4 py-3 text-sm" style={{ color: T.textFaint }}>No countries found</p>
-                )}
-                {filteredCountries.map((c) => (
-                  <button key={c.code} type="button"
-                    onClick={() => { setAns(c.name); setCountryOpen(false); setCountrySearch(""); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors"
-                    style={{
-                      color: selected === c.name ? T.deep : T.text,
-                      background: selected === c.name ? "rgba(0,98,92,0.06)" : "transparent",
-                      fontWeight: selected === c.name ? 600 : 400,
-                    }}
-                    onMouseEnter={(e) => { if (selected !== c.name) e.currentTarget.style.background = T.optionBg; }}
-                    onMouseLeave={(e) => { if (selected !== c.name) e.currentTarget.style.background = "transparent"; }}
-                  >
-                    <span style={{ fontSize: "16px" }}>{c.flag}</span>
-                    <span className="flex-1">{c.name}</span>
-                    {selected === c.name && <Check size={13} strokeWidth={2.5} style={{ color: T.deep }} />}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+                <div className="overflow-y-auto" style={{ maxHeight: "240px" }}>
+                  {filteredCountries.length === 0 && (
+                    <p className="px-4 py-3 text-sm" style={{ color: T.textFaint }}>No countries found</p>
+                  )}
+                  {filteredCountries.map((c) => (
+                    <button key={c.code} type="button"
+                      onClick={() => { setAns(c.name); setCountryOpen(false); setCountrySearch(""); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors"
+                      style={{
+                        color: selected === c.name ? T.deep : T.text,
+                        background: selected === c.name ? "rgba(0,98,92,0.06)" : "transparent",
+                        fontWeight: selected === c.name ? 600 : 400,
+                      }}
+                      onMouseEnter={(e) => { if (selected !== c.name) e.currentTarget.style.background = T.optionBg; }}
+                      onMouseLeave={(e) => { if (selected !== c.name) e.currentTarget.style.background = "transparent"; }}
+                    >
+                      <span style={{ fontSize: "16px" }}>{c.flag}</span>
+                      <span className="flex-1">{c.name}</span>
+                      {selected === c.name && <Check size={13} strokeWidth={2.5} style={{ color: T.deep }} />}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           {current.hint && <p className="mt-3 text-sm" style={{ color: T.textFaint }}>{current.hint}</p>}
           {err && <ErrorMsg msg={err} />}
         </div>
@@ -763,14 +795,13 @@ export function CreatorForm() {
               e.target.style.height = `${e.target.scrollHeight}px`;
             }}
             placeholder={current.placeholder}
-            rows={current.rows ?? 2}
+            rows={current.rows ?? 1}
             className={`${inputBase} resize-none leading-relaxed`}
             style={{
               color: T.text,
               borderColor: err ? T.error : T.border,
               caretColor: T.deep,
               overflow: "hidden",
-              minHeight: `${(current.rows ?? 2) * 32}px`,
             }}
             onFocus={(e) => (e.currentTarget.style.borderColor = err ? T.error : T.teal)}
             onBlur={(e) => (e.currentTarget.style.borderColor = err ? T.error : T.border)}
@@ -954,10 +985,11 @@ export function CreatorForm() {
           {selectedPlatforms.map((platform) => {
             const label = platform === "Other" && otherText["platform"] ? otherText["platform"] : platform;
             const placeholder =
-              platform === "Instagram" ? "https://instagram.com/yourhandle"
-              : platform === "TikTok" ? "https://tiktok.com/@yourhandle"
-              : platform === "YouTube" ? "https://youtube.com/@yourchannel"
-              : "https://yourprofilelink.com";
+              platform === "Instagram" ? "instagram.com/yourhandle"
+              : platform === "TikTok" ? "tiktok.com/@yourhandle"
+              : platform === "YouTube" ? "youtube.com/@yourchannel"
+              : "yourprofilelink.com";
+            const fieldErr = platformLinkErrors[platform];
             return (
               <div key={platform}>
                 <p className="mb-2 text-xs font-semibold tracking-widest uppercase" style={{ color: T.deep }}>{label}</p>
@@ -966,19 +998,21 @@ export function CreatorForm() {
                   value={platformLinkValues[platform] ?? ""}
                   onChange={(e) => {
                     setPlatformLinkValues((prev) => ({ ...prev, [platform]: e.target.value }));
-                    clearError(current.id);
+                    if (platformLinkErrors[platform]) {
+                      setPlatformLinkErrors((prev) => { const n = { ...prev }; delete n[platform]; return n; });
+                    }
                   }}
                   placeholder={placeholder}
                   className="w-full bg-transparent border-b-2 outline-none text-lg pb-2 pt-1 transition-colors duration-300 font-display tracking-tight"
-                  style={{ color: T.text, borderColor: T.border, caretColor: T.deep }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = T.teal)}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = T.border)}
+                  style={{ color: T.text, borderColor: fieldErr ? T.error : T.border, caretColor: T.deep }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = fieldErr ? T.error : T.teal)}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = fieldErr ? T.error : T.border)}
                 />
+                {fieldErr && <p className="mt-1.5 text-xs font-medium" style={{ color: T.error }}>{fieldErr}</p>}
               </div>
             );
           })}
           {current.hint && <p className="text-xs" style={{ color: T.textFaint }}>{current.hint}</p>}
-          {err && <ErrorMsg msg={err} />}
         </div>
       );
     }
@@ -1080,9 +1114,6 @@ export function CreatorForm() {
             <p className="text-lg leading-relaxed" style={{ color: T.textMuted }}>
               The Plotwise team is reviewing your profile and will get back to you{" "}
               <strong style={{ color: T.text }}>within 24 hours.</strong>
-            </p>
-            <p className="mt-4 text-base leading-relaxed" style={{ color: T.textFaint }}>
-              If there's a fit, onboarding moves fast — and campaigns come next.
             </p>
             <p className="mt-6 text-sm italic" style={{ color: T.textMuted }}>
               This is where creators stop waiting, and start choosing &{" "}
