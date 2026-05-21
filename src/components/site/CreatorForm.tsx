@@ -7,15 +7,17 @@ type AnswerValue = string | string[];
 
 interface StepDef {
   id: string;
-  type: "text" | "email" | "url" | "select" | "multiselect" | "textarea" | "platformlinks";
+  type: "text" | "email" | "url" | "select" | "multiselect" | "textarea" | "platformlinks" | "groupedmultiselect";
   question: string;
   placeholder?: string;
   hint?: string;
   options?: string[];
+  groups?: { label: string; options: string[] }[];
   required?: boolean;
 }
 
 const STEPS: StepDef[] = [
+  // Section 1: The basics
   {
     id: "name", type: "text",
     question: "What should we call you?",
@@ -29,6 +31,20 @@ const STEPS: StepDef[] = [
     required: true,
   },
   {
+    id: "phone", type: "text",
+    question: "What's your phone or WhatsApp number?",
+    placeholder: "+1 234 567 8900",
+    hint: "For faster coordination once you're onboarded.",
+  },
+  {
+    id: "location", type: "text",
+    question: "Which country are you based in?",
+    placeholder: "e.g. United States",
+    hint: "Helps us match you with brands shipping in your region.",
+    required: true,
+  },
+  // Section 2: Your content
+  {
     id: "platform", type: "multiselect",
     question: "Where do you create most content?",
     hint: "Select all that apply",
@@ -40,10 +56,51 @@ const STEPS: StepDef[] = [
     hint: "One link per platform",
   },
   {
+    id: "followerCount", type: "select",
+    question: "What's your follower count across platforms?",
+    hint: "We work with all sizes — this just helps us match campaigns.",
+    options: ["Under 5K", "5–25K", "25–100K", "100K+"],
+  },
+  {
     id: "niche", type: "multiselect",
     question: "What do you primarily create?",
     hint: "Select all that apply",
     options: ["Lifestyle", "Beauty", "Fitness", "Tech", "Storytelling", "Other"],
+  },
+  {
+    id: "ugcSamples", type: "textarea",
+    question: "Link 2–3 of your best UGC samples",
+    placeholder: "Paste your links here — drive links, public posts, or portfolios all work.",
+    hint: "Specifically UGC/ad-style content, not just lifestyle posts.",
+    required: true,
+  },
+  {
+    id: "contentFormats", type: "multiselect",
+    question: "What content formats are you strongest at?",
+    hint: "Select all that apply",
+    options: ["Talking head", "Voiceover", "Demo & tutorial", "Unboxing", "Before & after", "Lifestyle B-roll", "Skits", "Static photos"],
+  },
+  // Section 3: Experience & fit
+  {
+    id: "ageRange", type: "select",
+    question: "Which age bracket do you fall into?",
+    options: ["18–24", "25–34", "35–44", "45+"],
+  },
+  {
+    id: "skinToneHair", type: "groupedmultiselect",
+    question: "Tell us a bit about your skin, tone & hair",
+    hint: "Pick what applies. Skip anything you'd rather not share.",
+    groups: [
+      { label: "Skin type", options: ["Oily", "Dry", "Combination", "Sensitive", "Acne-prone"] },
+      { label: "Skin tone", options: ["Fair", "Light", "Medium", "Tan", "Deep"] },
+      { label: "Hair type", options: ["Straight", "Wavy", "Curly", "Coily", "Textured"] },
+    ],
+  },
+  {
+    id: "contentStyle", type: "multiselect",
+    question: "What's your strongest content style?",
+    hint: "Select all that apply",
+    options: ["Hook-driven short ads", "Tutorial & demo", "Storytelling & narrative", "Reviews & testimonials", "Comedic & skit-based", "High-volume variant testing"],
   },
   {
     id: "experience", type: "select",
@@ -55,6 +112,18 @@ const STEPS: StepDef[] = [
       "Performance-focused / Ad-ready",
       "Other",
     ],
+  },
+  // Section 4: Capacity
+  {
+    id: "availability", type: "text",
+    question: "How many campaigns could you realistically take on per month?",
+    placeholder: "e.g. 2–3",
+    hint: "Enter a number or range",
+  },
+  {
+    id: "turnaround", type: "select",
+    question: "From product received → footage delivered, what can you commit to?",
+    options: ["Under 5 days", "5–10 days", "10+ days"],
   },
   {
     id: "campaigns", type: "multiselect",
@@ -68,12 +137,6 @@ const STEPS: StepDef[] = [
       "Narrative-driven storytelling",
       "Other",
     ],
-  },
-  {
-    id: "availability", type: "text",
-    question: "How many campaigns could you realistically take on per month?",
-    placeholder: "e.g. 2–3",
-    hint: "Enter a number or range",
   },
   {
     id: "whyPlotwise", type: "textarea",
@@ -126,7 +189,6 @@ export function CreatorForm() {
   const [dir, setDir] = useState(1);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [otherText, setOtherText] = useState<Record<string, string>>({});
-  // Separate state for platform → link mapping (used by platformlinks step)
   const [platformLinkValues, setPlatformLinkValues] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
@@ -136,7 +198,9 @@ export function CreatorForm() {
   const otherInputRef = useRef<HTMLInputElement>(null);
 
   const current = STEPS[step];
-  const answer = answers[current?.id ?? ""] ?? (current?.type === "multiselect" ? [] : "");
+  const answer = answers[current?.id ?? ""] ?? (
+    current?.type === "multiselect" || current?.type === "groupedmultiselect" ? [] : ""
+  );
   const progress = submitted ? 100 : (step / TOTAL) * 100;
 
   const otherSelected =
@@ -144,7 +208,6 @@ export function CreatorForm() {
     (current?.type === "multiselect" && (answer as string[]).includes("Other"));
   const otherFilled = (otherText[current?.id ?? ""] ?? "").trim().length > 0;
 
-  // Get selected platforms (used by platformlinks step)
   const selectedPlatforms = (answers["platform"] as string[]) ?? [];
 
   const canAdvance = (() => {
@@ -154,6 +217,7 @@ export function CreatorForm() {
         (p) => (platformLinkValues[p] ?? "").trim().length > 0
       );
     }
+    if (current?.type === "groupedmultiselect") return true;
     if (otherSelected && !otherFilled) return false;
     if (current?.required) {
       if (current.type === "multiselect") return (answer as string[]).length > 0;
@@ -167,7 +231,6 @@ export function CreatorForm() {
       setDir(1);
       setStep((s) => s + 1);
     } else {
-      // On final submit: merge platform links into answers as profileLink string
       const profileLinkStr = selectedPlatforms
         .map((p) => {
           const label = p === "Other" && otherText["platform"] ? otherText["platform"] : p;
@@ -236,15 +299,16 @@ export function CreatorForm() {
   );
 
   const toggleMulti = useCallback(
-    (opt: string) => {
-      const cur = (answers[current.id] as string[]) ?? [];
+    (opt: string, id?: string) => {
+      const targetId = id ?? current.id;
+      const cur = (answers[targetId] as string[]) ?? [];
       const next = cur.includes(opt) ? cur.filter((o) => o !== opt) : [...cur, opt];
-      setAns(next);
-      if (opt === "Other" && !cur.includes("Other")) {
+      setAnswers((prev) => ({ ...prev, [targetId]: next }));
+      if (targetId === current.id && opt === "Other" && !cur.includes("Other")) {
         setTimeout(() => otherInputRef.current?.focus(), 100);
       }
     },
-    [answers, current?.id, setAns]
+    [answers, current?.id]
   );
 
   useEffect(() => {
@@ -255,6 +319,7 @@ export function CreatorForm() {
         current.type !== "textarea" &&
         current.type !== "select" &&
         current.type !== "multiselect" &&
+        current.type !== "groupedmultiselect" &&
         current.type !== "platformlinks"
       ) {
         if (canAdvance) goNext();
@@ -353,6 +418,9 @@ export function CreatorForm() {
       const showOther = answer === "Other";
       return (
         <div className="flex flex-col gap-4 max-w-xl">
+          {current.hint && (
+            <p className="text-sm -mt-2" style={{ color: T.textFaint }}>{current.hint}</p>
+          )}
           <div className="flex flex-wrap gap-3">
             {current.options?.map((opt, i) => {
               const sel = answer === opt;
@@ -459,6 +527,59 @@ export function CreatorForm() {
       );
     }
 
+    // ── Grouped Multiselect (skin/tone/hair) ────────────────────────────────
+    if (current.type === "groupedmultiselect") {
+      const selected = (answers[current.id] as string[]) ?? [];
+      return (
+        <div className="flex flex-col gap-6 max-w-xl w-full">
+          {current.hint && (
+            <p className="text-sm -mt-2" style={{ color: T.textFaint }}>{current.hint}</p>
+          )}
+          {current.groups?.map((group) => (
+            <div key={group.label}>
+              <p className="mb-2.5 text-xs font-semibold tracking-widest uppercase"
+                style={{ color: T.deep }}>
+                {group.label}
+              </p>
+              <div className="flex flex-wrap gap-2.5">
+                {group.options.map((opt) => {
+                  const sel = selected.includes(opt);
+                  return (
+                    <button key={opt} onClick={() => toggleMulti(opt, current.id)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer"
+                      style={{
+                        background: sel ? T.selBg : T.optionBg,
+                        color: sel ? T.selText : T.textSubtle,
+                        borderColor: sel ? T.selBorder : T.border,
+                        boxShadow: sel ? "0 0 24px -4px rgba(145,206,191,0.5)" : "none",
+                      }}
+                      onMouseEnter={(e) => { if (!sel) { e.currentTarget.style.borderColor = T.borderHover; e.currentTarget.style.background = T.optionBgHov; } }}
+                      onMouseLeave={(e) => { if (!sel) { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = T.optionBg; } }}
+                    >
+                      <span className="w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors"
+                        style={{
+                          borderColor: sel ? "rgba(19,24,24,0.25)" : T.border,
+                          background: sel ? "rgba(19,24,24,0.07)" : "transparent",
+                          color: T.selText,
+                        }}>
+                        {sel && <Check size={9} strokeWidth={3} />}
+                      </span>
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          {selected.length > 0 && (
+            <p className="text-xs" style={{ color: T.textFaint }}>
+              {selected.length} selected · click OK to continue
+            </p>
+          )}
+        </div>
+      );
+    }
+
     // ── Platform Links — one input per selected platform ────────────────────
     if (current.type === "platformlinks") {
       if (selectedPlatforms.length === 0) {
@@ -529,25 +650,22 @@ export function CreatorForm() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="max-w-lg w-full text-center"
         >
-          {/* Emoji inline with heading */}
-          <div className="flex items-center justify-center gap-3 mb-5">
-            <span style={{ fontSize: "48px", lineHeight: 1 }}>👋</span>
-            <h1 style={{
-              fontFamily: "'Georgia', 'Times New Roman', serif",
-              fontWeight: 700,
-              fontStyle: "italic",
-              fontSize: "clamp(40px, 6vw, 60px)",
-              color: T.text,
-              letterSpacing: "-0.02em",
-              margin: 0,
-              lineHeight: 1,
-            }}>
-              Hellooo
-            </h1>
-          </div>
+          <h1 style={{
+            fontFamily: "'Georgia', 'Times New Roman', serif",
+            fontWeight: 700,
+            fontStyle: "italic",
+            fontSize: "clamp(40px, 6vw, 60px)",
+            color: T.deep,
+            letterSpacing: "-0.02em",
+            margin: 0,
+            lineHeight: 1,
+            marginBottom: "20px",
+          }}>
+            Hellooo!
+          </h1>
 
           <p className="text-lg leading-relaxed mb-3"
-            style={{ color: "rgba(19,24,24,0.75)" }}>
+            style={{ color: "rgba(19,24,24,0.75)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             You're one step away from exclusive access to{" "}
             <span style={{ color: T.deep, fontWeight: 600 }}>high-value brand campaigns.</span>
           </p>
@@ -598,9 +716,8 @@ export function CreatorForm() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="max-w-lg"
           >
-            <div className="text-4xl mb-6">🚀</div>
-            <h2 className="font-display text-4xl sm:text-5xl font-normal tracking-tight leading-tight"
-              style={{ color: T.text }}>
+            <h2 className="font-display text-4xl sm:text-5xl font-normal tracking-tight"
+              style={{ color: T.text, whiteSpace: "nowrap" }}>
               You're officially on our radar.
             </h2>
             <p className="mt-5 text-lg leading-relaxed" style={{ color: T.textMuted }}>

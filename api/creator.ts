@@ -2,15 +2,24 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Resend } from "resend";
 
 const LABELS: Record<string, string> = {
-  name:         "Full Name",
-  email:        "Email Address",
-  platform:     "Primary Platform",
-  profileLink:  "Creator Profile Link(s)",
-  niche:        "Creator Category / Niche",
-  experience:   "Experience Level",
-  campaigns:    "Campaign Types",
-  availability: "Availability (campaigns/month)",
-  whyPlotwise:  "Why Plotwise?",
+  name:           "Full Name",
+  email:          "Email Address",
+  phone:          "Phone / WhatsApp",
+  location:       "Country",
+  platform:       "Primary Platform",
+  profileLink:    "Creator Profile Link(s)",
+  followerCount:  "Follower Count",
+  niche:          "Creator Category / Niche",
+  ugcSamples:     "UGC Sample Links",
+  contentFormats: "Content Formats",
+  ageRange:       "Age Range",
+  skinToneHair:   "Skin, Tone & Hair",
+  contentStyle:   "Content Style",
+  experience:     "Experience Level",
+  availability:   "Availability (campaigns/month)",
+  turnaround:     "Turnaround Time",
+  campaigns:      "Campaign Types",
+  whyPlotwise:    "Why Plotwise?",
 };
 
 function formatAnswer(
