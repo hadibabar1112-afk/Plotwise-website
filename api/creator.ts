@@ -141,8 +141,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const sheetData = await sheetRes.json();
       console.log("Creator sheet result:", JSON.stringify(sheetData));
     } catch (err) {
-      console.error("Creator sheet error:", err);
-      return res.status(500).json({ error: "Failed to save to Google Sheets" });
+      console.error("Creator sheet error (non-fatal):", err);
+      // non-fatal — continue to email + return success
     }
   } else {
     console.warn("CREATOR_SHEET_WEBHOOK not set — skipping sheet write");
