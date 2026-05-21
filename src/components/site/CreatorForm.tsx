@@ -210,7 +210,7 @@ const STEPS: StepDef[] = [
   { id: "followerCount", type: "select", question: "What's your follower count across platforms?", hint: "We work with all sizes — this just helps us match campaigns.", options: ["Under 5K", "5–25K", "25–100K", "100K+"], required: true },
   { id: "niche", type: "multiselect", question: "What do you primarily create?", hint: "Select all that apply", options: ["Beauty", "Skincare", "Haircare", "Makeup", "Wellness", "Lifestyle", "Fitness", "Other"], required: true },
   { id: "ugcSamples", type: "textarea", question: "Link 2–3 of your best UGC samples", placeholder: "Paste links here…", hint: "UGC/ad-style content — drive links, public posts, or portfolios all work.", required: true, rows: 1 },
-  { id: "contentFormats", type: "multiselect", question: "What content formats are you strongest at?", hint: "Select all that apply", options: ["Talking head", "Voiceover", "Demo & tutorial", "Unboxing", "Before & after", "Lifestyle B-roll", "Skits", "Static photos"], required: true },
+  { id: "contentFormats", type: "multiselect", question: "What content formats are you strongest at?", hint: "Select all that apply", options: ["Talking head", "Voiceover", "Unboxing", "Before & after", "Lifestyle B-roll", "Skits", "Static photos"], required: true },
   // Section 3: Experience & fit
   { id: "ageRange", type: "select", question: "Which age bracket do you fall into?", options: ["18–24", "25–34", "35–44", "45+"], required: true },
   {
@@ -226,9 +226,8 @@ const STEPS: StepDef[] = [
   },
   { id: "contentStyle", type: "multiselect", question: "What's your strongest content style?", hint: "Select all that apply", options: ["Hook-driven short ads", "Tutorial & demo", "Storytelling & narrative", "Reviews & testimonials", "Comedic & skit-based", "High-volume variant testing"], required: true },
   // Section 4: Capacity
-  { id: "availability", type: "text", question: "How many campaigns could you realistically take on per month?", placeholder: "e.g. 2–3", hint: "Enter a number or range", required: true },
+  { id: "availability", type: "select", question: "How many campaigns could you realistically take on per month?", options: ["1–2", "3–5", "6+"], required: true },
   { id: "turnaround", type: "select", question: "From product received → footage delivered, what can you commit to?", options: ["Under 5 days", "5–10 days", "10+ days"], required: true },
-  { id: "campaigns", type: "multiselect", question: "What type of campaigns excite you?", hint: "Select all that apply", options: ["Paid UGC for ads", "Long-term brand partnerships", "High-volume creative testing", "Performance-driven content", "Narrative-driven storytelling", "Other"], required: true },
   { id: "whyPlotwise", type: "textarea", question: "What made you want to join Plotwise?", placeholder: "Tell us in a few sentences…", hint: "Be as specific as you like", rows: 1 },
 ];
 
