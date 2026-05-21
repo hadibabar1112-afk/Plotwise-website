@@ -228,7 +228,6 @@ const STEPS: StepDef[] = [
   // Section 4: Capacity
   { id: "availability", type: "select", question: "How many campaigns could you realistically take on per month?", options: ["1–2", "3–5", "6+"], required: true },
   { id: "turnaround", type: "select", question: "From product received → footage delivered, what can you commit to?", options: ["Under 5 days", "5–10 days", "10+ days"], required: true },
-  { id: "whyPlotwise", type: "textarea", question: "What made you want to join Plotwise?", placeholder: "Tell us in a few sentences…", hint: "Be as specific as you like", rows: 1 },
 ];
 
 const TOTAL = STEPS.length;
