@@ -225,7 +225,6 @@ const STEPS: StepDef[] = [
     required: true,
   },
   { id: "contentStyle", type: "multiselect", question: "What's your strongest content style?", hint: "Select all that apply", options: ["Hook-driven short ads", "Tutorial & demo", "Storytelling & narrative", "Reviews & testimonials", "Comedic & skit-based", "High-volume variant testing"], required: true },
-  { id: "experience", type: "select", question: "How would you describe your creator journey?", options: ["Just getting started", "Consistent creator", "Brand-experienced", "Performance-focused / Ad-ready", "Other"], required: true },
   // Section 4: Capacity
   { id: "availability", type: "text", question: "How many campaigns could you realistically take on per month?", placeholder: "e.g. 2–3", hint: "Enter a number or range", required: true },
   { id: "turnaround", type: "select", question: "From product received → footage delivered, what can you commit to?", options: ["Under 5 days", "5–10 days", "10+ days"], required: true },
