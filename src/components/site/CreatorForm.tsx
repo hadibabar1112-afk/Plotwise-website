@@ -202,7 +202,7 @@ const STEPS: StepDef[] = [
   // Section 1: The basics
   { id: "name", type: "text", question: "What should we call you?", placeholder: "Your full name", required: true },
   { id: "email", type: "email", question: "Where can we reach you?", placeholder: "you@email.com", required: true },
-  { id: "phone", type: "phone", question: "What's your phone or WhatsApp number?", placeholder: "300 123 4567", hint: "For faster coordination once you're onboarded.", required: true },
+  { id: "phone", type: "phone", question: "What's your phone or WhatsApp number?", placeholder: "300 123 4567", hint: "For faster coordination once you're onboarded." },
   { id: "location", type: "countrydropdown", question: "Which country are you based in?", hint: "Helps us match you with brands shipping in your region.", required: true },
   // Section 2: Your content
   { id: "platform", type: "multiselect", question: "Where do you create most content?", hint: "Select all that apply", options: ["Instagram", "TikTok", "YouTube", "Other"], required: true },
