@@ -231,9 +231,16 @@ export function CaseStudyPopup({
                               const m = items[i];
                               if (isVideo(m.src)) {
                                 blocks.push(
-                                  <figure className="rcp-media is-video" key={n++}>
-                                    <MediaEl src={m.src} poster={m.poster} />
-                                  </figure>
+                                  <div className="rcp-video-close-wrap" key={n++}>
+                                    <figure className="rcp-media is-video">
+                                      <MediaEl src={m.src} poster={m.poster} />
+                                    </figure>
+                                    <button className="rcp-close-on-video" onClick={onClose} aria-label="Close">
+                                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                        <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
+                                      </svg>
+                                    </button>
+                                  </div>
                                 );
                                 i += 1;
                               } else if (i + 1 < items.length && !isVideo(items[i + 1].src)) {
@@ -597,12 +604,23 @@ const CSS = `
   .rcp-mb-value, .rcp-stat-box .rcp-stat-value { font-size: 22px; white-space: nowrap; }
 }
 .rcp-mobile-media { display: none; }
+.rcp-video-close-wrap { position: relative; }
+.rcp-close-on-video {
+  position: absolute; top: 12px; right: 12px; z-index: 10;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(14,20,20,0.55); color: white;
+  display: none; place-items: center; border: none; cursor: pointer;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: background .2s;
+}
+.rcp-close-on-video:hover { background: var(--rcp-green); }
 @media (max-width: 1100px) {
   .rcp-right { display: none; }
   .rcp-mobile-media { display: flex; flex-direction: column; gap: 14px; margin: 22px 0 8px; }
   .rcp-mobile-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .rcp-mobile-media .rcp-media.is-image { aspect-ratio: 4 / 5; }
   .rcp-mobile-media .rcp-media.is-image img { width: 100%; height: 100%; object-fit: cover; }
+  .rcp-close-on-video { display: grid; }
 }
 .rcp-next { margin-top: 80px; padding: 64px 48px 96px; background: var(--rcp-bg-2); border-top: 1px solid var(--rcp-rule); }
 .rcp-next-inner { max-width: 1320px; margin: 0 auto; }

@@ -6,6 +6,7 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>(threshold = 0.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -15,7 +16,7 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>(threshold = 0.
           }
         });
       },
-      { threshold, rootMargin: "0px 0px -10% 0px" }
+      { threshold: isMobile ? 0.05 : threshold, rootMargin: isMobile ? "0px" : "0px 0px -10% 0px" }
     );
     io.observe(el);
     return () => io.disconnect();

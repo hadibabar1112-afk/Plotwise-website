@@ -43,7 +43,8 @@ function ReelCard({
   isMobile?: boolean;
 }) {
   // Mobile uses the 360p version (~350-670 KB each vs 2-3.6 MB).
-  // preload="auto" so they fully load during the 3.5 s preloader window.
+  // On mobile, preload="auto" so videos buffer during the 2 s preloader window
+  // and play immediately once visible. Desktop uses "none" to avoid bandwidth waste.
   const videoSrc = isMobile ? mobileVideo : video;
   return (
     <div
@@ -58,7 +59,7 @@ function ReelCard({
           muted
           loop
           playsInline
-          preload="none"
+          preload={isMobile ? "auto" : "none"}
           className="absolute inset-0 h-full w-full object-cover rounded-[28px]"
         />
       ) : (

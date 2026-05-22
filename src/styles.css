@@ -397,6 +397,12 @@
     opacity: 1;
     transform: translateY(0);
   }
+  @media (max-width: 767px) {
+    .reveal-up {
+      transform: translateY(14px);
+      transition-duration: 0.5s;
+    }
+  }
 }
 
 /* Uniform vertical spacing between top-level sections */
