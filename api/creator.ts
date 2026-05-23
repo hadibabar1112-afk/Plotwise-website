@@ -141,17 +141,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // ── 1. Google Sheets ───────────────────────────────────────────────────────
   if (CREATOR_SHEET_WEBHOOK) {
+    console.log("Creator sheet webhook URL tail:", CREATOR_SHEET_WEBHOOK.slice(-30));
     try {
       const sheetRes = await fetch(CREATOR_SHEET_WEBHOOK, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ answers, otherText: otherText ?? {} }),
+        redirect: "follow",
       });
-      const sheetData = await sheetRes.json();
-      console.log("Creator sheet result:", JSON.stringify(sheetData));
+      console.log("Creator sheet HTTP status:", sheetRes.status, sheetRes.url.slice(-30));
+      const raw = await sheetRes.text();
+      console.log("Creator sheet raw response:", raw.slice(0, 300));
+      try {
+        const sheetData = JSON.parse(raw);
+        console.log("Creator sheet parsed:", JSON.stringify(sheetData));
+      } catch {
+        console.warn("Creator sheet response was not JSON (see raw above)");
+      }
     } catch (err) {
-      console.error("Creator sheet error (non-fatal):", err);
-      // non-fatal — continue to email + return success
+      console.error("Creator sheet fetch error (non-fatal):", err);
     }
   } else {
     console.warn("CREATOR_SHEET_WEBHOOK not set — skipping sheet write");
