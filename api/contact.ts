@@ -114,6 +114,7 @@ function buildEmailHtml(
 }
 
 const SHEET_WEBHOOK =
+  process.env.CONTACT_SHEET_WEBHOOK ??
   "https://script.google.com/macros/s/AKfycbxhPgn3hiLvYeaIPKRZv7bkXH-9W44-5RdzQ5b04zD7Nc4-n7X2scZuqZUvM1cDjemblA/exec";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -134,21 +135,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const rawEmail   = (answers.email as string) || "";
   const replyEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) ? rawEmail : undefined;
 
-  // ── 1. Google Sheets (primary — must succeed) ──────────────────────────────
-  try {
-    const sheetRes = await fetch(SHEET_WEBHOOK, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ answers, otherText: otherText ?? {} }),
-    });
-    const sheetData = await sheetRes.json();
-    console.log("Sheet result:", JSON.stringify(sheetData));
-  } catch (err) {
-    console.error("Sheet error:", err);
-    return res.status(500).json({ error: "Failed to save to Google Sheets" });
+  // ── 1. Google Sheets (non-fatal — sheet failure must not block email) ──────
+  if (SHEET_WEBHOOK) {
+    try {
+      const sheetRes = await fetch(SHEET_WEBHOOK, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ answers, otherText: otherText ?? {} }),
+      });
+      const sheetData = await sheetRes.json();
+      console.log("Contact sheet result:", JSON.stringify(sheetData));
+    } catch (err) {
+      console.error("Contact sheet error (non-fatal):", err);
+      // non-fatal — continue to email + return success
+    }
+  } else {
+    console.warn("CONTACT_SHEET_WEBHOOK not set — skipping sheet write");
   }
 
-  // ── 2. Resend email (best-effort — won't fail the response if it errors) ───
+  // ── 2. Resend email ────────────────────────────────────────────────────────
   if (process.env.RESEND_API_KEY) {
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);
@@ -161,9 +166,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
       console.log("Resend result:", JSON.stringify(result));
     } catch (err) {
-      // Log but don't block — sheet already saved the data
       console.error("Resend error (non-fatal):", err);
     }
+  } else {
+    console.warn("RESEND_API_KEY not set — skipping email");
   }
 
   return res.status(200).json({ success: true });
