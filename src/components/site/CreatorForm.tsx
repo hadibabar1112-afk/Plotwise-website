@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Logo } from "./Logo";
 import { ArrowLeft, Check, ChevronDown, Search } from "lucide-react";
 
-// ── Country data ────────────────────────────────────────────────────────────
+// ── Country data ─────────────────────────────────────────────────────────────
 interface CountryData { code: string; name: string; dial: string; flag: string; }
-
 const COUNTRIES: CountryData[] = [
   { code: "AF", name: "Afghanistan", dial: "+93", flag: "🇦🇫" },
   { code: "AL", name: "Albania", dial: "+355", flag: "🇦🇱" },
@@ -182,488 +181,383 @@ const COUNTRIES: CountryData[] = [
   { code: "ZW", name: "Zimbabwe", dial: "+263", flag: "🇿🇼" },
 ];
 
-// ── Types ────────────────────────────────────────────────────────────────────
-type AnswerValue = string | string[];
-
+// ── Steps ─────────────────────────────────────────────────────────────────────
+type StepType = "text" | "email" | "phone" | "select" | "multiselect" | "textarea" | "platformlinks" | "groupedmultiselect" | "countrydropdown";
 interface StepDef {
   id: string;
-  type: "text" | "email" | "phone" | "url" | "select" | "multiselect" | "textarea" | "platformlinks" | "groupedmultiselect" | "countrydropdown";
+  type: StepType;
   question: string;
   placeholder?: string;
   hint?: string;
   options?: string[];
   groups?: { label: string; options: string[] }[];
   required?: boolean;
-  rows?: number;
 }
 
-// ── Steps ────────────────────────────────────────────────────────────────────
 const STEPS: StepDef[] = [
-  // Section 1: The basics
-  { id: "name", type: "text", question: "What should we call you?", placeholder: "Your full name", required: true },
-  { id: "email", type: "email", question: "Where can we reach you?", placeholder: "you@email.com", required: true },
-  { id: "phone", type: "phone", question: "What's your phone or WhatsApp number?", placeholder: "300 123 4567", hint: "For faster coordination once you're onboarded." },
-  { id: "location", type: "countrydropdown", question: "Which country are you based in?", hint: "Helps us match you with brands shipping in your region.", required: true },
-  // Section 2: Your content
-  { id: "platform", type: "multiselect", question: "Where do you create most content?", hint: "Select all that apply", options: ["Instagram", "TikTok", "YouTube", "Other"], required: true },
-  { id: "profileLink", type: "platformlinks", question: "Drop your profile link(s)", hint: "One link per platform", required: true },
-  { id: "followerCount", type: "select", question: "What's your follower count across platforms?", hint: "We work with all sizes — this just helps us match campaigns.", options: ["Under 5K", "5–25K", "25–100K", "100K+"], required: true },
-  { id: "niche", type: "multiselect", question: "What do you primarily create?", hint: "Select all that apply", options: ["Beauty", "Skincare", "Haircare", "Makeup", "Wellness", "Lifestyle", "Fitness", "Other"], required: true },
-  { id: "ugcSamples", type: "textarea", question: "Link 2–3 of your best UGC samples", placeholder: "Paste links here…", hint: "UGC/ad-style content — drive links, public posts, or portfolios all work.", required: true, rows: 1 },
-  { id: "contentFormats", type: "multiselect", question: "What content formats are you strongest at?", hint: "Select all that apply", options: ["Talking head", "Voiceover", "Unboxing", "Before & after", "Lifestyle B-roll", "Skits", "Static photos"], required: true },
-  // Section 3: Experience & fit
-  { id: "ageRange", type: "select", question: "Which age bracket do you fall into?", options: ["18–24", "25–34", "35–44", "45+"], required: true },
-  {
-    id: "skinToneHair", type: "groupedmultiselect",
-    question: "Tell us a bit about your skin, tone & hair",
-    hint: "Pick what applies. Skip anything you'd rather not share.",
+  { id: "name",         type: "text",              question: "What should we call you?",                                                         placeholder: "Your full name",    required: true },
+  { id: "email",        type: "email",             question: "Where can we reach you?",                                                          placeholder: "you@email.com",     required: true },
+  { id: "phone",        type: "phone",             question: "What's your phone or WhatsApp number?",                                            placeholder: "300 123 4567",      hint: "For faster coordination once you're onboarded." },
+  { id: "location",     type: "countrydropdown",   question: "Which country are you based in?",                                                   hint: "Helps us match you with brands shipping in your region.", required: true },
+  { id: "platform",     type: "multiselect",       question: "Where do you create most content?",                                                hint: "Select all that apply",    options: ["Instagram", "TikTok", "YouTube", "Other"], required: true },
+  { id: "profileLink",  type: "platformlinks",     question: "Drop your profile link(s)",                                                        hint: "One link per platform",    required: true },
+  { id: "followerCount",type: "select",            question: "What's your follower count across platforms?",                                     hint: "We work with all sizes — this just helps us match campaigns.", options: ["Under 5K", "5–25K", "25–100K", "100K+"], required: true },
+  { id: "niche",        type: "multiselect",       question: "What do you primarily create?",                                                    hint: "Select all that apply",    options: ["Beauty", "Skincare", "Haircare", "Makeup", "Wellness", "Lifestyle", "Fitness", "Other"], required: true },
+  { id: "ugcSamples",   type: "textarea",          question: "Link 2–3 of your best UGC samples",                                               placeholder: "Paste links here…", hint: "Drive links, public posts, or portfolios all work.", required: true },
+  { id: "contentFormats",type: "multiselect",      question: "What content formats are you strongest at?",                                      hint: "Select all that apply",    options: ["Talking head", "Voiceover", "Unboxing", "Before & after", "Lifestyle B-roll", "Skits", "Static photos"], required: true },
+  { id: "ageRange",     type: "select",            question: "Which age bracket do you fall into?",                                              options: ["18–24", "25–34", "35–44", "45+"], required: true },
+  { id: "skinToneHair", type: "groupedmultiselect",question: "Tell us a bit about your skin, tone & hair",                                      hint: "Pick what applies. Skip anything you'd rather not share.",
     groups: [
       { label: "Skin type", options: ["Oily", "Dry", "Combination", "Sensitive", "Acne-prone"] },
       { label: "Skin tone", options: ["Fair", "Light", "Medium", "Tan", "Deep"] },
       { label: "Hair type", options: ["Straight", "Wavy", "Curly", "Coily", "Textured"] },
-    ],
-    required: true,
-  },
-  { id: "contentStyle", type: "multiselect", question: "What's your strongest content style?", hint: "Select all that apply", options: ["Hook-driven short ads", "Tutorial & demo", "Storytelling & narrative", "Reviews & testimonials", "Comedic & skit-based", "High-volume variant testing"], required: true },
-  // Section 4: Capacity
-  { id: "availability", type: "select", question: "How many campaigns could you realistically take on per month?", options: ["1–2", "3–5", "6+"], required: true },
-  { id: "turnaround", type: "select", question: "From product received → footage delivered, what can you commit to?", options: ["Under 5 days", "5–10 days", "10+ days"], required: true },
+    ], required: true },
+  { id: "contentStyle", type: "multiselect",       question: "What's your strongest content style?",                                            hint: "Select all that apply",    options: ["Hook-driven short ads", "Tutorial & demo", "Storytelling & narrative", "Reviews & testimonials", "Comedic & skit-based", "High-volume variant testing"], required: true },
+  { id: "availability", type: "select",            question: "How many campaigns could you realistically take on per month?",                   options: ["1–2", "3–5", "6+"],    required: true },
+  { id: "turnaround",   type: "select",            question: "From product received → footage delivered, what can you commit to?",              options: ["Under 5 days", "5–10 days", "10+ days"], required: true },
 ];
 
 const TOTAL = STEPS.length;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const slideVariants: any = {
+// ── Theme ─────────────────────────────────────────────────────────────────────
+const C = {
+  bg:       "#F5F8F7",
+  text:     "#131818",
+  muted:    "rgba(19,24,24,0.45)",
+  faint:    "rgba(19,24,24,0.28)",
+  subtle:   "rgba(19,24,24,0.55)",
+  border:   "rgba(19,24,24,0.10)",
+  bHover:   "rgba(0,98,92,0.35)",
+  teal:     "#91CEBF",
+  deep:     "#00625C",
+  dark:     "#207771",
+  optBg:    "rgba(19,24,24,0.04)",
+  optHov:   "rgba(19,24,24,0.07)",
+  selBg:    "#91CEBF",
+  track:    "rgba(19,24,24,0.08)",
+  error:    "#c0392b",
+};
+
+const slide = {
   enter: (d: number) => ({ y: d * 36, opacity: 0, filter: "blur(6px)" }),
-  center: { y: 0, opacity: 1, filter: "blur(0px)", transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
-  exit: (d: number) => ({ y: d * -36, opacity: 0, filter: "blur(6px)", transition: { duration: 0.25, ease: "easeIn" } }),
+  center: { y: 0, opacity: 1, filter: "blur(0px)", transition: { duration: 0.42, ease: [0.16, 1, 0.3, 1] } },
+  exit:  (d: number) => ({ y: d * -36, opacity: 0, filter: "blur(6px)", transition: { duration: 0.22, ease: "easeIn" } }),
 };
 
-const T = {
-  bg:          "#F5F8F7",
-  text:        "#131818",
-  textMuted:   "rgba(19,24,24,0.45)",
-  textFaint:   "rgba(19,24,24,0.28)",
-  textSubtle:  "rgba(19,24,24,0.55)",
-  border:      "rgba(19,24,24,0.10)",
-  borderHover: "rgba(0,98,92,0.35)",
-  teal:        "#91CEBF",
-  deep:        "#00625C",
-  dark:        "#207771",
-  optionBg:    "rgba(19,24,24,0.04)",
-  optionBgHov: "rgba(19,24,24,0.07)",
-  selBg:       "#91CEBF",
-  selText:     "#131818",
-  selBorder:   "#91CEBF",
-  trackBg:     "rgba(19,24,24,0.08)",
-  dotInactive: "rgba(19,24,24,0.12)",
-  dotDone:     "rgba(0,98,92,0.35)",
-  error:       "#c0392b",
-};
-
-const DEFAULT_DIAL: CountryData = { code: "US", name: "United States", dial: "+1", flag: "🇺🇸" };
-
+// ── Component ─────────────────────────────────────────────────────────────────
 export function CreatorForm() {
-  const [started, setStarted] = useState(false);
-  const [step, setStep] = useState(0);
-  const [dir, setDir] = useState(1);
-  const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
+  const [screen,  setScreen]  = useState<"welcome" | "form" | "success">("welcome");
+  const [step,    setStep]    = useState(0);
+  const [dir,     setDir]     = useState(1);
+
+  // Answers: plain values
+  const [answers,  setAnswers]  = useState<Record<string, string | string[]>>({});
   const [otherText, setOtherText] = useState<Record<string, string>>({});
-  const [platformLinkValues, setPlatformLinkValues] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [platformLinkErrors, setPlatformLinkErrors] = useState<Record<string, string>>({});
 
-  // Phone dial code state
-  const [phoneDialCode, setPhoneDialCode] = useState<CountryData>(DEFAULT_DIAL);
-  const [phoneDialOpen, setPhoneDialOpen] = useState(false);
-  const [phoneDialSearch, setPhoneDialSearch] = useState("");
+  // Platform links stored separately (keyed by platform name)
+  const [platLinks, setPlatLinks] = useState<Record<string, string>>({});
+  const [platErrs,  setPlatErrs]  = useState<Record<string, string>>({});
 
-  // Country dropdown state
-  const [countryOpen, setCountryOpen] = useState(false);
-  const [countrySearch, setCountrySearch] = useState("");
+  // Phone dial code
+  const [dial,       setDial]       = useState<CountryData>(COUNTRIES.find(c => c.code === "US")!);
+  const [dialOpen,   setDialOpen]   = useState(false);
+  const [dialSearch, setDialSearch] = useState("");
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const otherInputRef = useRef<HTMLInputElement>(null);
-  const phoneDropdownRef = useRef<HTMLDivElement>(null);
-  const countryDropdownRef = useRef<HTMLDivElement>(null);
+  // Country dropdown
+  const [cOpen,   setCOpen]   = useState(false);
+  const [cSearch, setCSearch] = useState("");
 
-  const current = STEPS[step];
-  const answer = answers[current?.id ?? ""] ?? (
-    current?.type === "multiselect" || current?.type === "groupedmultiselect" ? [] : ""
+  // Submission
+  const [sending,    setSending]    = useState(false);
+  const [submitErr,  setSubmitErr]  = useState<string | null>(null);
+
+  // Per-step inline error
+  const [fieldErr,  setFieldErr]  = useState<string | null>(null);
+
+  // Refs
+  const inputRef    = useRef<HTMLInputElement>(null);
+  const taRef       = useRef<HTMLTextAreaElement>(null);
+  const otherRef    = useRef<HTMLInputElement>(null);
+  const dialRef     = useRef<HTMLDivElement>(null);
+  const countryRef  = useRef<HTMLDivElement>(null);
+
+  const cur = STEPS[step];
+  const ans = answers[cur?.id ?? ""] ?? (
+    cur?.type === "multiselect" || cur?.type === "groupedmultiselect" ? [] : ""
   );
-  const progress = submitted ? 100 : (step / TOTAL) * 100;
-
-  const otherSelected =
-    (current?.type === "select" && answer === "Other") ||
-    (current?.type === "multiselect" && (answer as string[]).includes("Other"));
-  const otherFilled = (otherText[current?.id ?? ""] ?? "").trim().length > 0;
-
   const selectedPlatforms = (answers["platform"] as string[]) ?? [];
+  const otherSelected =
+    (cur?.type === "select" && ans === "Other") ||
+    (cur?.type === "multiselect" && (ans as string[]).includes("Other"));
+  const otherVal = otherText[cur?.id ?? ""] ?? "";
 
-  // ── Close dropdowns on outside click ──────────────────────────────────────
+  // Close dropdowns on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (phoneDropdownRef.current && !phoneDropdownRef.current.contains(e.target as Node)) {
-        setPhoneDialOpen(false);
-      }
-      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
-        setCountryOpen(false);
-      }
+      if (dialRef.current && !dialRef.current.contains(e.target as Node)) setDialOpen(false);
+      if (countryRef.current && !countryRef.current.contains(e.target as Node)) setCOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ── Can advance ────────────────────────────────────────────────────────────
-  const canAdvance = (() => {
-    if (current?.type === "platformlinks") {
-      if (selectedPlatforms.length === 0) return false;
-      return selectedPlatforms.every((p) => (platformLinkValues[p] ?? "").trim().length > 0);
-    }
-    if (current?.type === "groupedmultiselect") {
-      if (current.required) return ((answers[current.id] as string[]) ?? []).length > 0;
-      return true;
-    }
-    if (otherSelected && !otherFilled) return false;
-    if (current?.required) {
-      if (current.type === "multiselect") return (answer as string[]).length > 0;
-      return (answer as string).trim().length > 0;
-    }
-    return true;
-  })();
+  // Focus input when step changes
+  useEffect(() => {
+    const id = setTimeout(() => {
+      inputRef.current?.focus();
+      taRef.current?.focus();
+    }, 80);
+    return () => clearTimeout(id);
+  }, [step]);
 
-  const clearError = useCallback((id: string) => {
-    setFieldErrors((prev) => {
-      if (!prev[id]) return prev;
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-  }, []);
+  // ── Validate current step ──────────────────────────────────────────────────
+  function validate(overrideAnswers?: Record<string, string | string[]>): string | null {
+    const a = overrideAnswers ?? answers;
+    const val = a[cur.id] ?? (cur.type === "multiselect" || cur.type === "groupedmultiselect" ? [] : "");
 
-  const setAns = useCallback(
-    (val: AnswerValue) => {
-      setAnswers((prev) => ({ ...prev, [current.id]: val }));
-      clearError(current.id);
-    },
-    [current?.id, clearError]
-  );
-
-  // ── Validation (runs on OK click) ──────────────────────────────────────────
-  const validateCurrentStep = useCallback((): string | null => {
-    const id = current.id;
-    const val = answers[id] ?? (
-      current.type === "multiselect" || current.type === "groupedmultiselect" ? [] : ""
-    );
-
-    // Email format
-    if (current.type === "email") {
-      const str = (val as string).trim();
-      if (!str) return "Email address is required.";
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str)) return "Please enter a valid email address.";
+    if (cur.type === "email") {
+      const s = (val as string).trim();
+      if (!s) return "Email address is required.";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) return "Please enter a valid email address.";
       return null;
     }
 
-    // Phone — optional; if provided must contain only digits, spaces, dashes, or parentheses
-    if (current.type === "phone") {
-      const str = (val as string).trim();
-      if (!str) return null; // field is optional — skip validation if empty
-      if (!/^[\d\s\-()+]+$/.test(str)) return "Please enter a valid phone number (digits only).";
+    if (cur.type === "phone") {
+      const s = (val as string).trim();
+      if (!s) return null; // optional
+      if (!/^[\d\s\-()+]+$/.test(s)) return "Please enter a valid phone number.";
       return null;
     }
 
-    // Platform links — per-field errors, auto-prepend https://
-    if (current.type === "platformlinks") {
-      const newPlatformErrors: Record<string, string> = {};
-      let hasError = false;
-      for (const platform of selectedPlatforms) {
-        const raw = (platformLinkValues[platform] ?? "").trim();
-        if (!raw) {
-          newPlatformErrors[platform] = `Please enter your ${platform} profile link.`;
-          hasError = true;
-          continue;
-        }
-        const link = /^https?:\/\//.test(raw) ? raw : `https://${raw}`;
-        if (platform === "Instagram" && !link.includes("instagram.com")) {
-          newPlatformErrors[platform] = `Doesn't look like an Instagram link. Try: instagram.com/yourhandle`;
-          hasError = true;
-        } else if (platform === "TikTok" && !link.includes("tiktok.com")) {
-          newPlatformErrors[platform] = `Doesn't look like a TikTok link. Try: tiktok.com/@yourhandle`;
-          hasError = true;
-        } else if (platform === "YouTube" && !link.includes("youtube.com") && !link.includes("youtu.be")) {
-          newPlatformErrors[platform] = `Doesn't look like a YouTube link. Try: youtube.com/@yourchannel`;
-          hasError = true;
-        }
-      }
-      setPlatformLinkErrors(newPlatformErrors);
-      return hasError ? "__platform_errors__" : null;
-    }
-
-    // Country dropdown
-    if (current.type === "countrydropdown") {
-      if (current.required && !(val as string)) return "Please select your country.";
+    if (cur.type === "countrydropdown") {
+      if (cur.required && !(val as string)) return "Please select your country.";
       return null;
     }
 
-    // Required multiselect / grouped
-    if (current.type === "multiselect" || current.type === "groupedmultiselect") {
-      if (current.required && ((val as string[]) ?? []).length === 0) return "Please select at least one option.";
+    if (cur.type === "multiselect" || cur.type === "groupedmultiselect") {
+      if (cur.required && (val as string[]).length === 0) return "Please select at least one option.";
       return null;
     }
 
-    // Other text required when Other selected
-    if (otherSelected && !otherFilled) return "Please describe your choice.";
+    if (cur.type === "platformlinks") {
+      return null; // validated separately in validatePlatformLinks
+    }
 
-    // Generic required text/textarea
-    if (current.required && current.type !== "select") {
+    if (otherSelected && !otherVal.trim()) return "Please describe your choice.";
+
+    if (cur.required) {
       if (!(val as string).trim()) return "This field is required.";
     }
 
     return null;
-  }, [current, answers, selectedPlatforms, platformLinkValues, otherSelected, otherFilled]);
+  }
 
-  // ── Navigation ─────────────────────────────────────────────────────────────
-  const goNext = useCallback(async () => {
-    const error = validateCurrentStep();
-    if (error) {
-      if (error !== "__platform_errors__") {
-        setFieldErrors((prev) => ({ ...prev, [current.id]: error }));
+  function validatePlatformLinks(): boolean {
+    const errs: Record<string, string> = {};
+    let ok = true;
+    for (const p of selectedPlatforms) {
+      const raw = (platLinks[p] ?? "").trim();
+      if (!raw) {
+        errs[p] = `Please enter your ${p} profile link.`;
+        ok = false;
+        continue;
       }
-      return;
+      const url = /^https?:\/\//.test(raw) ? raw : `https://${raw}`;
+      if (p === "Instagram" && !url.includes("instagram.com")) {
+        errs[p] = "Doesn't look like an Instagram link. Try: instagram.com/yourhandle";
+        ok = false;
+      } else if (p === "TikTok" && !url.includes("tiktok.com")) {
+        errs[p] = "Doesn't look like a TikTok link. Try: tiktok.com/@yourhandle";
+        ok = false;
+      } else if (p === "YouTube" && !url.includes("youtube.com") && !url.includes("youtu.be")) {
+        errs[p] = "Doesn't look like a YouTube link. Try: youtube.com/@yourchannel";
+        ok = false;
+      }
     }
+    setPlatErrs(errs);
+    return ok;
+  }
 
+  // ── Submit to API ──────────────────────────────────────────────────────────
+  async function submitForm(finalAnswers: Record<string, string | string[]>) {
+    setSending(true);
+    setSubmitErr(null);
+
+    // Build profile link string
+    const profileLink = selectedPlatforms
+      .map(p => {
+        const raw = (platLinks[p] ?? "").trim();
+        if (!raw) return null;
+        const url = /^https?:\/\//.test(raw) ? raw : `https://${raw}`;
+        const label = p === "Other" && otherText["platform"] ? otherText["platform"] : p;
+        return `${label}: ${url}`;
+      })
+      .filter(Boolean)
+      .join("\n");
+
+    // Build phone string
+    const rawPhone = ((finalAnswers["phone"] as string) ?? "").trim();
+    const phone = rawPhone ? `${dial.dial} ${rawPhone}` : "";
+
+    const payload = {
+      answers: { ...finalAnswers, profileLink, phone },
+      otherText,
+    };
+
+    try {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch("/api/creator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(t);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error ?? "server error");
+      }
+      setScreen("success");
+    } catch (err) {
+      const isTimeout = err instanceof Error && err.name === "AbortError";
+      setSubmitErr(isTimeout
+        ? "Request timed out — please check your connection and try again."
+        : "Something went wrong. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  // ── Proceed: advance or submit — ALL navigation goes through here ──────────
+  // This is the single source of truth. No path bypasses the API on last step.
+  function proceed(overrideAnswers?: Record<string, string | string[]>) {
+    const a = overrideAnswers ?? answers;
+    setFieldErr(null);
     if (step < TOTAL - 1) {
       setDir(1);
-      setStep((s) => s + 1);
+      setStep(s => s + 1);
     } else {
-      const profileLinkStr = selectedPlatforms
-        .map((p) => {
-          const label = p === "Other" && otherText["platform"] ? otherText["platform"] : p;
-          const raw = (platformLinkValues[p] ?? "").trim();
-          if (!raw) return null;
-          const link = /^https?:\/\//.test(raw) ? raw : `https://${raw}`;
-          return `${label}: ${link}`;
-        })
-        .filter(Boolean)
-        .join("\n");
-
-      const phoneVal = (answers["phone"] as string ?? "").trim();
-      const finalAnswers = {
-        ...answers,
-        profileLink: profileLinkStr,
-        phone: phoneVal ? `${phoneDialCode.dial} ${phoneVal}` : "",
-      };
-
-      setSending(true);
-      setSendError(null);
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
-      try {
-        const res = await fetch("/api/creator", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ answers: finalAnswers, otherText }),
-          signal: controller.signal,
-        });
-        clearTimeout(timeout);
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error((data as { error?: string }).error || "server error");
-        }
-        setSubmitted(true);
-      } catch (err) {
-        clearTimeout(timeout);
-        const isTimeout = err instanceof Error && err.name === "AbortError";
-        setSendError(
-          isTimeout
-            ? "Request timed out — please check your connection and try again."
-            : "Something went wrong sending your submission. Please try again."
-        );
-      } finally {
-        setSending(false);
-      }
+      submitForm(a);
     }
-  }, [step, current, answers, otherText, platformLinkValues, selectedPlatforms, phoneDialCode, validateCurrentStep]);
+  }
 
-  const goPrev = useCallback(() => {
-    if (step > 0) { setDir(-1); setStep((s) => s - 1); }
-  }, [step]);
+  // ── OK button handler ──────────────────────────────────────────────────────
+  function handleOK() {
+    if (cur.type === "platformlinks") {
+      if (!validatePlatformLinks()) return;
+      proceed();
+      return;
+    }
+    const err = validate();
+    if (err) { setFieldErr(err); return; }
+    proceed();
+  }
 
-  const handleSelectChoice = useCallback(
-    (opt: string) => {
-      setAnswers((prev) => ({ ...prev, [current.id]: opt }));
-      clearError(current.id);
-      if (opt === "Other") {
-        setTimeout(() => otherInputRef.current?.focus(), 100);
-        return;
-      }
-      setTimeout(() => {
-        setDir(1);
-        if (step < TOTAL - 1) setStep((s) => s + 1);
-        else setSubmitted(true);
-      }, 350);
-    },
-    [step, current?.id, clearError]
-  );
+  // ── Select: click choice → auto-advance after short delay ─────────────────
+  // Key fix: calls proceed() which hits the API on last step — no bypass.
+  function handleSelectChoice(opt: string) {
+    const newAnswers = { ...answers, [cur.id]: opt };
+    setAnswers(newAnswers);
+    setFieldErr(null);
+    if (opt === "Other") {
+      setTimeout(() => otherRef.current?.focus(), 80);
+      return;
+    }
+    // Delay lets the selection highlight animate before transitioning
+    setTimeout(() => proceed(newAnswers), 320);
+  }
 
-  const toggleMulti = useCallback(
-    (opt: string, id?: string) => {
-      const targetId = id ?? current.id;
-      const cur = (answers[targetId] as string[]) ?? [];
-      const next = cur.includes(opt) ? cur.filter((o) => o !== opt) : [...cur, opt];
-      setAnswers((prev) => ({ ...prev, [targetId]: next }));
-      clearError(targetId);
-      if (targetId === current.id && opt === "Other" && !cur.includes("Other")) {
-        setTimeout(() => otherInputRef.current?.focus(), 100);
-      }
-    },
-    [answers, current?.id, clearError]
-  );
+  // ── Multi-select toggle ────────────────────────────────────────────────────
+  function toggleMulti(opt: string, id?: string) {
+    const targetId = id ?? cur.id;
+    const prev = (answers[targetId] as string[]) ?? [];
+    const next = prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt];
+    setAnswers(a => ({ ...a, [targetId]: next }));
+    setFieldErr(null);
+    if (opt === "Other" && !prev.includes("Other")) {
+      setTimeout(() => otherRef.current?.focus(), 80);
+    }
+  }
 
-  // ── Keyboard + autofocus ───────────────────────────────────────────────────
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (submitted || !started) return;
-      if (
-        e.key === "Enter" &&
-        current.type !== "textarea" &&
-        current.type !== "select" &&
-        current.type !== "multiselect" &&
-        current.type !== "groupedmultiselect" &&
-        current.type !== "platformlinks" &&
-        current.type !== "countrydropdown"
-      ) {
-        if (canAdvance) goNext();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [canAdvance, goNext, current?.type, submitted, started]);
+  // ── Render input for current step ─────────────────────────────────────────
+  function renderInput() {
+    const inputBase = "w-full bg-transparent border-b-2 outline-none text-xl sm:text-2xl pb-3 pt-1 transition-colors duration-200 font-display tracking-tight";
+    const errBorder = fieldErr ? C.error : C.border;
 
-  useEffect(() => {
-    if (submitted || !started) return;
-    const t = setTimeout(() => {
-      if (current.type === "textarea") textareaRef.current?.focus();
-      else if (current.type === "text" || current.type === "url" || current.type === "email")
-        inputRef.current?.focus();
-    }, 450);
-    return () => clearTimeout(t);
-  }, [step, current?.type, submitted, started]);
-
-  // ── Input renderer ─────────────────────────────────────────────────────────
-  const renderInput = () => {
-    if (!current) return null;
-    const err = fieldErrors[current.id];
-
-    const inputBase =
-      "w-full bg-transparent border-b-2 outline-none text-xl sm:text-2xl pb-3 pt-1 transition-colors duration-300 font-display tracking-tight";
-
-    const ErrorMsg = ({ msg }: { msg: string }) => (
-      <p className="mt-2 text-sm font-medium" style={{ color: T.error }}>{msg}</p>
-    );
-
-    // ── Text / Email / URL ─────────────────────────────────────────────────
-    if (current.type === "text" || current.type === "url" || current.type === "email") {
+    // TEXT / EMAIL
+    if (cur.type === "text" || cur.type === "email") {
       return (
         <div className="w-full max-w-xl">
           <input
             ref={inputRef}
-            type={current.type === "url" ? "text" : current.type}
-            value={answer as string}
-            onChange={(e) => setAns(e.target.value)}
-            placeholder={current.placeholder}
+            type={cur.type}
+            value={ans as string}
+            onChange={e => { setAnswers(a => ({ ...a, [cur.id]: e.target.value })); setFieldErr(null); }}
+            placeholder={cur.placeholder}
             className={inputBase}
-            style={{ color: T.text, borderColor: err ? T.error : T.border, caretColor: T.deep }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = err ? T.error : T.teal)}
-            onBlur={(e) => (e.currentTarget.style.borderColor = err ? T.error : T.border)}
-            onKeyDown={(e) => { if (e.key === "Enter" && canAdvance) goNext(); }}
+            style={{ color: C.text, borderColor: errBorder, caretColor: C.deep }}
+            onFocus={e => (e.currentTarget.style.borderColor = fieldErr ? C.error : C.teal)}
+            onBlur={e => (e.currentTarget.style.borderColor = fieldErr ? C.error : C.border)}
+            onKeyDown={e => { if (e.key === "Enter") handleOK(); }}
           />
-          {current.hint && <p className="mt-3 text-sm" style={{ color: T.textFaint }}>{current.hint}</p>}
-          {err ? <ErrorMsg msg={err} /> : (
-            <p className="mt-5 text-xs tracking-wide" style={{ color: T.textFaint }}>
-              Press{" "}
-              <kbd className="px-1.5 py-0.5 rounded font-mono text-[10px]"
-                style={{ border: `1px solid ${T.border}`, color: T.textMuted }}>
-                Enter ↵
-              </kbd>{" "}
-              to continue
-            </p>
-          )}
+          {cur.hint && <p className="mt-3 text-sm" style={{ color: C.faint }}>{cur.hint}</p>}
+          {fieldErr
+            ? <p className="mt-2 text-sm font-medium" style={{ color: C.error }}>{fieldErr}</p>
+            : <p className="mt-5 text-xs tracking-wide" style={{ color: C.faint }}>Press <kbd className="px-1.5 py-0.5 rounded font-mono text-[10px]" style={{ border: `1px solid ${C.border}`, color: C.subtle }}>Enter ↵</kbd> to continue</p>
+          }
         </div>
       );
     }
 
-    // ── Phone ──────────────────────────────────────────────────────────────
-    if (current.type === "phone") {
-      const filteredDials = COUNTRIES.filter((c) =>
-        c.name.toLowerCase().includes(phoneDialSearch.toLowerCase()) ||
-        c.dial.includes(phoneDialSearch)
+    // PHONE
+    if (cur.type === "phone") {
+      const filtered = COUNTRIES.filter(c =>
+        c.name.toLowerCase().includes(dialSearch.toLowerCase()) || c.dial.includes(dialSearch)
       );
       return (
         <div className="w-full max-w-xl">
           <div className="flex items-stretch gap-0">
-            {/* Dial code selector */}
-            <div ref={phoneDropdownRef} className="relative shrink-0">
-              <button
-                type="button"
-                onClick={() => { setPhoneDialOpen((o) => !o); setPhoneDialSearch(""); }}
-                className="flex items-center gap-1.5 px-3 h-full border-b-2 transition-colors duration-300"
-                style={{ borderColor: err ? T.error : T.border, color: T.text, background: "transparent" }}
+            <div ref={dialRef} className="relative shrink-0">
+              <button type="button"
+                onClick={() => { setDialOpen(o => !o); setDialSearch(""); }}
+                className="flex items-center gap-1.5 px-3 h-full border-b-2 transition-colors duration-200"
+                style={{ borderColor: fieldErr ? C.error : C.border, color: C.text, background: "transparent" }}
               >
-                <span style={{ fontSize: "20px", lineHeight: 1 }}>{phoneDialCode.flag}</span>
-                <span className="text-base font-mono tabular-nums" style={{ color: T.textSubtle }}>{phoneDialCode.dial}</span>
-                <motion.span animate={{ rotate: phoneDialOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                  <ChevronDown size={13} style={{ color: T.textFaint }} />
+                <span style={{ fontSize: "20px", lineHeight: 1 }}>{dial.flag}</span>
+                <span className="text-base font-mono" style={{ color: C.subtle }}>{dial.dial}</span>
+                <motion.span animate={{ rotate: dialOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                  <ChevronDown size={13} style={{ color: C.faint }} />
                 </motion.span>
               </button>
-
               <AnimatePresence>
-                {phoneDialOpen && (
+                {dialOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: -8, scaleY: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scaleY: 1 }}
-                    exit={{ opacity: 0, y: -8, scaleY: 0.96 }}
-                    transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ transformOrigin: "top", background: "#fff", border: `1px solid ${T.border}`, width: "280px" }}
+                    initial={{ opacity: 0, y: -8, scaleY: 0.96 }} animate={{ opacity: 1, y: 0, scaleY: 1 }}
+                    exit={{ opacity: 0, y: -8, scaleY: 0.96 }} transition={{ duration: 0.16 }}
+                    style={{ transformOrigin: "top", background: "#fff", border: `1px solid ${C.border}`, width: "280px" }}
                     className="absolute top-full left-0 z-50 mt-1 rounded-xl shadow-2xl overflow-hidden"
                   >
-                    <div className="p-2.5" style={{ borderBottom: `1px solid ${T.border}` }}>
-                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg" style={{ background: T.optionBg }}>
-                        <Search size={13} style={{ color: T.textFaint }} />
-                        <input
-                          type="text"
-                          value={phoneDialSearch}
-                          onChange={(e) => setPhoneDialSearch(e.target.value)}
-                          placeholder="Search country or code…"
-                          className="flex-1 outline-none text-sm bg-transparent"
-                          style={{ color: T.text }}
-                          autoFocus
-                        />
+                    <div className="p-2.5" style={{ borderBottom: `1px solid ${C.border}` }}>
+                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg" style={{ background: C.optBg }}>
+                        <Search size={13} style={{ color: C.faint }} />
+                        <input type="text" value={dialSearch} onChange={e => setDialSearch(e.target.value)}
+                          placeholder="Search country or code…" className="flex-1 outline-none text-sm bg-transparent"
+                          style={{ color: C.text }} autoFocus />
                       </div>
                     </div>
                     <div className="overflow-y-auto" style={{ maxHeight: "220px" }}>
-                      {filteredDials.length === 0 && (
-                        <p className="px-4 py-3 text-sm" style={{ color: T.textFaint }}>No results</p>
-                      )}
-                      {filteredDials.map((c) => (
+                      {filtered.length === 0 && <p className="px-4 py-3 text-sm" style={{ color: C.faint }}>No results</p>}
+                      {filtered.map(c => (
                         <button key={c.code} type="button"
-                          onClick={() => { setPhoneDialCode(c); setPhoneDialOpen(false); setPhoneDialSearch(""); }}
+                          onClick={() => { setDial(c); setDialOpen(false); setDialSearch(""); }}
                           className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-left transition-colors"
-                          style={{
-                            color: phoneDialCode.code === c.code ? T.deep : T.text,
-                            background: phoneDialCode.code === c.code ? "rgba(0,98,92,0.06)" : "transparent",
-                            fontWeight: phoneDialCode.code === c.code ? 600 : 400,
-                          }}
-                          onMouseEnter={(e) => { if (phoneDialCode.code !== c.code) e.currentTarget.style.background = T.optionBg; }}
-                          onMouseLeave={(e) => { if (phoneDialCode.code !== c.code) e.currentTarget.style.background = "transparent"; }}
+                          style={{ color: dial.code === c.code ? C.deep : C.text, background: dial.code === c.code ? "rgba(0,98,92,0.06)" : "transparent", fontWeight: dial.code === c.code ? 600 : 400 }}
+                          onMouseEnter={e => { if (dial.code !== c.code) e.currentTarget.style.background = C.optBg; }}
+                          onMouseLeave={e => { if (dial.code !== c.code) e.currentTarget.style.background = "transparent"; }}
                         >
-                          <span>{c.flag}</span>
-                          <span className="flex-1 truncate">{c.name}</span>
-                          <span className="font-mono text-xs shrink-0" style={{ color: T.textFaint }}>{c.dial}</span>
+                          <span>{c.flag}</span><span className="flex-1 truncate">{c.name}</span>
+                          <span className="font-mono text-xs shrink-0" style={{ color: C.faint }}>{c.dial}</span>
                         </button>
                       ))}
                     </div>
@@ -671,179 +565,127 @@ export function CreatorForm() {
                 )}
               </AnimatePresence>
             </div>
-
-            {/* Number input */}
-            <input
-              ref={inputRef}
-              type="tel"
-              inputMode="numeric"
-              value={answer as string}
-              onChange={(e) => setAns(e.target.value)}
-              placeholder={current.placeholder}
+            <input ref={inputRef} type="tel" inputMode="numeric"
+              value={ans as string}
+              onChange={e => { setAnswers(a => ({ ...a, [cur.id]: e.target.value })); setFieldErr(null); }}
+              placeholder={cur.placeholder}
               className={`${inputBase} flex-1 pl-3`}
-              style={{ color: T.text, borderColor: err ? T.error : T.border, caretColor: T.deep }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = err ? T.error : T.teal)}
-              onBlur={(e) => (e.currentTarget.style.borderColor = err ? T.error : T.border)}
-              onKeyDown={(e) => { if (e.key === "Enter" && canAdvance) goNext(); }}
+              style={{ color: C.text, borderColor: fieldErr ? C.error : C.border, caretColor: C.deep }}
+              onFocus={e => (e.currentTarget.style.borderColor = fieldErr ? C.error : C.teal)}
+              onBlur={e => (e.currentTarget.style.borderColor = fieldErr ? C.error : C.border)}
+              onKeyDown={e => { if (e.key === "Enter") handleOK(); }}
             />
           </div>
-          {current.hint && <p className="mt-3 text-sm" style={{ color: T.textFaint }}>{current.hint}</p>}
-          {err && <ErrorMsg msg={err} />}
+          {cur.hint && <p className="mt-3 text-sm" style={{ color: C.faint }}>{cur.hint}</p>}
+          {fieldErr && <p className="mt-2 text-sm font-medium" style={{ color: C.error }}>{fieldErr}</p>}
         </div>
       );
     }
 
-    // ── Country dropdown ───────────────────────────────────────────────────
-    if (current.type === "countrydropdown") {
-      const selected = answer as string;
-      const filteredCountries = COUNTRIES.filter((c) =>
-        c.name.toLowerCase().includes(countrySearch.toLowerCase())
-      );
+    // COUNTRY DROPDOWN
+    if (cur.type === "countrydropdown") {
+      const selected = ans as string;
+      const filteredC = COUNTRIES.filter(c => c.name.toLowerCase().includes(cSearch.toLowerCase()));
       return (
-        <div className="w-full max-w-xl relative" ref={countryDropdownRef}>
-          <button
-            type="button"
-            onClick={() => { setCountryOpen((o) => !o); setCountrySearch(""); }}
-            className="w-full flex items-center justify-between gap-3 border-b-2 pb-3 pt-1 text-xl sm:text-2xl font-display tracking-tight transition-colors duration-300 text-left"
-            style={{
-              color: selected ? T.text : T.textFaint,
-              borderColor: err ? T.error : (countryOpen ? T.teal : T.border),
-              background: "transparent",
-            }}
+        <div className="w-full max-w-xl relative" ref={countryRef}>
+          <button type="button"
+            onClick={() => { setCOpen(o => !o); setCSearch(""); }}
+            className="w-full flex items-center justify-between gap-3 border-b-2 pb-3 pt-1 text-xl sm:text-2xl font-display tracking-tight transition-colors duration-200 text-left"
+            style={{ color: selected ? C.text : C.faint, borderColor: fieldErr ? C.error : (cOpen ? C.teal : C.border), background: "transparent" }}
           >
             <span className="flex items-center gap-2.5">
-              {selected && (
-                <span style={{ fontSize: "20px", lineHeight: 1 }}>
-                  {COUNTRIES.find((c) => c.name === selected)?.flag}
-                </span>
-              )}
+              {selected && <span style={{ fontSize: "20px", lineHeight: 1 }}>{COUNTRIES.find(c => c.name === selected)?.flag}</span>}
               <span>{selected || "Select your country"}</span>
             </span>
-            <motion.span animate={{ rotate: countryOpen ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0">
-              <ChevronDown size={20} style={{ color: T.textFaint }} />
+            <motion.span animate={{ rotate: cOpen ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0">
+              <ChevronDown size={20} style={{ color: C.faint }} />
             </motion.span>
           </button>
-
           <AnimatePresence>
-            {countryOpen && (
+            {cOpen && (
               <motion.div
-                initial={{ opacity: 0, y: -8, scaleY: 0.96 }}
-                animate={{ opacity: 1, y: 0, scaleY: 1 }}
-                exit={{ opacity: 0, y: -8, scaleY: 0.96 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                style={{ transformOrigin: "top", background: "#fff", border: `1px solid ${T.border}` }}
+                initial={{ opacity: 0, y: -8, scaleY: 0.96 }} animate={{ opacity: 1, y: 0, scaleY: 1 }}
+                exit={{ opacity: 0, y: -8, scaleY: 0.96 }} transition={{ duration: 0.16 }}
+                style={{ transformOrigin: "top", background: "#fff", border: `1px solid ${C.border}` }}
                 className="absolute top-full left-0 right-0 mt-1 z-50 rounded-xl shadow-2xl overflow-hidden"
               >
-                <div className="p-2.5" style={{ borderBottom: `1px solid ${T.border}` }}>
-                  <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg" style={{ background: T.optionBg }}>
-                    <Search size={13} style={{ color: T.textFaint }} />
-                    <input
-                      type="text"
-                      value={countrySearch}
-                      onChange={(e) => setCountrySearch(e.target.value)}
-                      placeholder="Search country…"
-                      className="flex-1 outline-none text-sm bg-transparent"
-                      style={{ color: T.text }}
-                      autoFocus
-                    />
+                <div className="p-2.5" style={{ borderBottom: `1px solid ${C.border}` }}>
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg" style={{ background: C.optBg }}>
+                    <Search size={13} style={{ color: C.faint }} />
+                    <input type="text" value={cSearch} onChange={e => setCSearch(e.target.value)}
+                      placeholder="Search country…" className="flex-1 outline-none text-sm bg-transparent"
+                      style={{ color: C.text }} autoFocus />
                   </div>
                 </div>
                 <div className="overflow-y-auto" style={{ maxHeight: "240px" }}>
-                  {filteredCountries.length === 0 && (
-                    <p className="px-4 py-3 text-sm" style={{ color: T.textFaint }}>No countries found</p>
-                  )}
-                  {filteredCountries.map((c) => (
+                  {filteredC.length === 0 && <p className="px-4 py-3 text-sm" style={{ color: C.faint }}>No results</p>}
+                  {filteredC.map(c => (
                     <button key={c.code} type="button"
-                      onClick={() => { setAns(c.name); setCountryOpen(false); setCountrySearch(""); }}
+                      onClick={() => { setAnswers(a => ({ ...a, [cur.id]: c.name })); setCOpen(false); setCSearch(""); setFieldErr(null); }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors"
-                      style={{
-                        color: selected === c.name ? T.deep : T.text,
-                        background: selected === c.name ? "rgba(0,98,92,0.06)" : "transparent",
-                        fontWeight: selected === c.name ? 600 : 400,
-                      }}
-                      onMouseEnter={(e) => { if (selected !== c.name) e.currentTarget.style.background = T.optionBg; }}
-                      onMouseLeave={(e) => { if (selected !== c.name) e.currentTarget.style.background = "transparent"; }}
+                      style={{ color: selected === c.name ? C.deep : C.text, background: selected === c.name ? "rgba(0,98,92,0.06)" : "transparent", fontWeight: selected === c.name ? 600 : 400 }}
+                      onMouseEnter={e => { if (selected !== c.name) e.currentTarget.style.background = C.optBg; }}
+                      onMouseLeave={e => { if (selected !== c.name) e.currentTarget.style.background = "transparent"; }}
                     >
                       <span style={{ fontSize: "16px" }}>{c.flag}</span>
                       <span className="flex-1">{c.name}</span>
-                      {selected === c.name && <Check size={13} strokeWidth={2.5} style={{ color: T.deep }} />}
+                      {selected === c.name && <Check size={13} strokeWidth={2.5} style={{ color: C.deep }} />}
                     </button>
                   ))}
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
-          {current.hint && <p className="mt-3 text-sm" style={{ color: T.textFaint }}>{current.hint}</p>}
-          {err && <ErrorMsg msg={err} />}
+          {cur.hint && <p className="mt-3 text-sm" style={{ color: C.faint }}>{cur.hint}</p>}
+          {fieldErr && <p className="mt-2 text-sm font-medium" style={{ color: C.error }}>{fieldErr}</p>}
         </div>
       );
     }
 
-    // ── Textarea ───────────────────────────────────────────────────────────
-    if (current.type === "textarea") {
+    // TEXTAREA
+    if (cur.type === "textarea") {
       return (
         <div className="w-full max-w-xl">
-          <textarea
-            ref={textareaRef}
-            value={answer as string}
-            onChange={(e) => {
-              setAns(e.target.value);
+          <textarea ref={taRef}
+            value={ans as string}
+            onChange={e => {
+              setAnswers(a => ({ ...a, [cur.id]: e.target.value }));
+              setFieldErr(null);
               e.target.style.height = "auto";
               e.target.style.height = `${e.target.scrollHeight}px`;
             }}
-            placeholder={current.placeholder}
-            rows={current.rows ?? 1}
+            placeholder={cur.placeholder} rows={1}
             className={`${inputBase} resize-none leading-relaxed`}
-            style={{
-              color: T.text,
-              borderColor: err ? T.error : T.border,
-              caretColor: T.deep,
-              overflow: "hidden",
-            }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = err ? T.error : T.teal)}
-            onBlur={(e) => (e.currentTarget.style.borderColor = err ? T.error : T.border)}
+            style={{ color: C.text, borderColor: fieldErr ? C.error : C.border, caretColor: C.deep, overflow: "hidden" }}
+            onFocus={e => (e.currentTarget.style.borderColor = fieldErr ? C.error : C.teal)}
+            onBlur={e => (e.currentTarget.style.borderColor = fieldErr ? C.error : C.border)}
           />
-          {current.hint && <p className="mt-2 text-sm" style={{ color: T.textFaint }}>{current.hint}</p>}
-          {err ? <ErrorMsg msg={err} /> : (
-            <p className="mt-3 text-xs" style={{ color: T.textFaint }}>
-              <kbd className="px-1.5 py-0.5 rounded font-mono text-[10px]"
-                style={{ border: `1px solid ${T.border}`, color: T.textMuted }}>
-                Shift + Enter
-              </kbd>{" "}
-              for new line
-            </p>
-          )}
+          {cur.hint && <p className="mt-2 text-sm" style={{ color: C.faint }}>{cur.hint}</p>}
+          {fieldErr
+            ? <p className="mt-2 text-sm font-medium" style={{ color: C.error }}>{fieldErr}</p>
+            : <p className="mt-3 text-xs" style={{ color: C.faint }}><kbd className="px-1.5 py-0.5 rounded font-mono text-[10px]" style={{ border: `1px solid ${C.border}`, color: C.subtle }}>Shift + Enter</kbd> for new line</p>
+          }
         </div>
       );
     }
 
-    // ── Select ─────────────────────────────────────────────────────────────
-    if (current.type === "select") {
-      const showOther = answer === "Other";
+    // SELECT
+    if (cur.type === "select") {
       return (
         <div className="flex flex-col gap-4 max-w-xl">
-          {current.hint && <p className="text-sm -mt-2" style={{ color: T.textFaint }}>{current.hint}</p>}
+          {cur.hint && <p className="text-sm -mt-2" style={{ color: C.faint }}>{cur.hint}</p>}
           <div className="flex flex-wrap gap-3">
-            {current.options?.map((opt, i) => {
-              const sel = answer === opt;
+            {cur.options?.map((opt, i) => {
+              const sel = ans === opt;
               return (
                 <button key={opt} type="button" onClick={() => handleSelectChoice(opt)}
-                  className="flex items-center gap-2.5 px-5 py-3 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer"
-                  style={{
-                    background: sel ? T.selBg : T.optionBg,
-                    color: sel ? T.selText : T.textSubtle,
-                    borderColor: sel ? T.selBorder : T.border,
-                    boxShadow: sel ? "0 0 24px -4px rgba(145,206,191,0.5)" : "none",
-                  }}
-                  onMouseEnter={(e) => { if (!sel) { e.currentTarget.style.borderColor = T.borderHover; e.currentTarget.style.background = T.optionBgHov; } }}
-                  onMouseLeave={(e) => { if (!sel) { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = T.optionBg; } }}
+                  className="flex items-center gap-2.5 px-5 py-3 rounded-xl border text-sm font-medium transition-all duration-200"
+                  style={{ background: sel ? C.selBg : C.optBg, color: sel ? C.text : C.subtle, borderColor: sel ? C.teal : C.border, boxShadow: sel ? "0 0 24px -4px rgba(145,206,191,0.5)" : "none" }}
+                  onMouseEnter={e => { if (!sel) { e.currentTarget.style.borderColor = C.bHover; e.currentTarget.style.background = C.optHov; } }}
+                  onMouseLeave={e => { if (!sel) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.optBg; } }}
                 >
-                  <span className="text-[10px] font-mono shrink-0 w-4 h-4 rounded flex items-center justify-center border transition-colors"
-                    style={{
-                      borderColor: sel ? "rgba(19,24,24,0.25)" : T.border,
-                      color: sel ? "rgba(19,24,24,0.5)" : T.textFaint,
-                      background: sel ? "rgba(19,24,24,0.07)" : "transparent",
-                    }}>
+                  <span className="text-[10px] font-mono w-4 h-4 rounded flex items-center justify-center border"
+                    style={{ borderColor: sel ? "rgba(19,24,24,0.25)" : C.border, color: sel ? "rgba(19,24,24,0.5)" : C.faint, background: sel ? "rgba(19,24,24,0.07)" : "transparent" }}>
                     {String.fromCharCode(65 + i)}
                   </span>
                   {opt}
@@ -852,54 +694,45 @@ export function CreatorForm() {
               );
             })}
           </div>
-          {showOther && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
-              <input ref={otherInputRef} type="text"
-                value={otherText[current.id] ?? ""}
-                onChange={(e) => { setOtherText((prev) => ({ ...prev, [current.id]: e.target.value })); clearError(current.id); }}
+          {/* "Other" text input */}
+          {otherSelected && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}>
+              <input ref={otherRef} type="text" value={otherVal}
+                onChange={e => { setOtherText(t => ({ ...t, [cur.id]: e.target.value })); setFieldErr(null); }}
                 placeholder="Please describe…"
-                className="w-full bg-transparent border-b-2 outline-none text-lg pb-2 pt-1 transition-colors duration-300 font-display tracking-tight"
-                style={{ color: T.text, borderColor: T.border, caretColor: T.deep }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = T.teal)}
-                onBlur={(e) => (e.currentTarget.style.borderColor = T.border)}
-                onKeyDown={(e) => { if (e.key === "Enter" && otherFilled) goNext(); }}
+                className="w-full bg-transparent border-b-2 outline-none text-lg pb-2 pt-1 transition-colors duration-200 font-display tracking-tight"
+                style={{ color: C.text, borderColor: C.border, caretColor: C.deep }}
+                onFocus={e => (e.currentTarget.style.borderColor = C.teal)}
+                onBlur={e => (e.currentTarget.style.borderColor = C.border)}
+                onKeyDown={e => { if (e.key === "Enter" && otherVal.trim()) handleOK(); }}
               />
             </motion.div>
           )}
-          {err && <ErrorMsg msg={err} />}
+          {fieldErr && <p className="text-sm font-medium" style={{ color: C.error }}>{fieldErr}</p>}
         </div>
       );
     }
 
-    // ── Multiselect ────────────────────────────────────────────────────────
-    if (current.type === "multiselect") {
-      const selected = answer as string[];
+    // MULTISELECT
+    if (cur.type === "multiselect") {
+      const selected = ans as string[];
       const showOther = selected.includes("Other");
       return (
         <div className="flex flex-col gap-4 max-w-xl w-full">
-          {current.hint && <p className="text-sm -mt-2" style={{ color: T.textFaint }}>{current.hint}</p>}
+          {cur.hint && <p className="text-sm -mt-2" style={{ color: C.faint }}>{cur.hint}</p>}
           <div className="flex flex-wrap gap-3">
-            {current.options?.map((opt) => {
+            {cur.options?.map(opt => {
               const sel = selected.includes(opt);
               return (
                 <button key={opt} type="button" onClick={() => toggleMulti(opt)}
-                  className="flex items-center gap-2.5 px-5 py-3 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer"
-                  style={{
-                    background: sel ? T.selBg : T.optionBg,
-                    color: sel ? T.selText : T.textSubtle,
-                    borderColor: sel ? T.selBorder : T.border,
-                    boxShadow: sel ? "0 0 24px -4px rgba(145,206,191,0.5)" : "none",
-                  }}
-                  onMouseEnter={(e) => { if (!sel) { e.currentTarget.style.borderColor = T.borderHover; e.currentTarget.style.background = T.optionBgHov; } }}
-                  onMouseLeave={(e) => { if (!sel) { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = T.optionBg; } }}
+                  className="flex items-center gap-2.5 px-5 py-3 rounded-xl border text-sm font-medium transition-all duration-200"
+                  style={{ background: sel ? C.selBg : C.optBg, color: sel ? C.text : C.subtle, borderColor: sel ? C.teal : C.border, boxShadow: sel ? "0 0 24px -4px rgba(145,206,191,0.5)" : "none" }}
+                  onMouseEnter={e => { if (!sel) { e.currentTarget.style.borderColor = C.bHover; e.currentTarget.style.background = C.optHov; } }}
+                  onMouseLeave={e => { if (!sel) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.optBg; } }}
                 >
-                  <span className="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
-                    style={{
-                      borderColor: sel ? "rgba(19,24,24,0.25)" : T.border,
-                      background: sel ? "rgba(19,24,24,0.07)" : "transparent",
-                      color: T.selText,
-                    }}>
-                    {sel && <Check size={10} strokeWidth={3} />}
+                  <span className="w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0"
+                    style={{ borderColor: sel ? "rgba(19,24,24,0.25)" : C.border, background: sel ? "rgba(19,24,24,0.07)" : "transparent" }}>
+                    {sel && <Check size={9} strokeWidth={3} />}
                   </span>
                   {opt}
                 </button>
@@ -907,55 +740,46 @@ export function CreatorForm() {
             })}
           </div>
           {showOther && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
-              <input ref={otherInputRef} type="text"
-                value={otherText[current.id] ?? ""}
-                onChange={(e) => { setOtherText((prev) => ({ ...prev, [current.id]: e.target.value })); clearError(current.id); }}
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}>
+              <input ref={otherRef} type="text" value={otherVal}
+                onChange={e => { setOtherText(t => ({ ...t, [cur.id]: e.target.value })); setFieldErr(null); }}
                 placeholder="Please describe…"
-                className="w-full bg-transparent border-b-2 outline-none text-lg pb-2 pt-1 transition-colors duration-300 font-display tracking-tight"
-                style={{ color: T.text, borderColor: T.border, caretColor: T.deep }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = T.teal)}
-                onBlur={(e) => (e.currentTarget.style.borderColor = T.border)}
+                className="w-full bg-transparent border-b-2 outline-none text-lg pb-2 pt-1 transition-colors duration-200 font-display tracking-tight"
+                style={{ color: C.text, borderColor: C.border, caretColor: C.deep }}
+                onFocus={e => (e.currentTarget.style.borderColor = C.teal)}
+                onBlur={e => (e.currentTarget.style.borderColor = C.border)}
               />
             </motion.div>
           )}
-          {err ? <ErrorMsg msg={err} /> : selected.length > 0 && (
-            <p className="text-xs" style={{ color: T.textFaint }}>{selected.length} selected · click OK to continue</p>
-          )}
+          {fieldErr
+            ? <p className="text-sm font-medium" style={{ color: C.error }}>{fieldErr}</p>
+            : selected.length > 0 && <p className="text-xs" style={{ color: C.faint }}>{selected.length} selected · click OK to continue</p>
+          }
         </div>
       );
     }
 
-    // ── Grouped multiselect ────────────────────────────────────────────────
-    if (current.type === "groupedmultiselect") {
-      const selected = (answers[current.id] as string[]) ?? [];
+    // GROUPED MULTISELECT
+    if (cur.type === "groupedmultiselect") {
+      const selected = ans as string[];
       return (
         <div className="flex flex-col gap-6 max-w-xl w-full">
-          {current.hint && <p className="text-sm -mt-2" style={{ color: T.textFaint }}>{current.hint}</p>}
-          {current.groups?.map((group) => (
+          {cur.hint && <p className="text-sm -mt-2" style={{ color: C.faint }}>{cur.hint}</p>}
+          {cur.groups?.map(group => (
             <div key={group.label}>
-              <p className="mb-2.5 text-xs font-semibold tracking-widest uppercase" style={{ color: T.deep }}>{group.label}</p>
+              <p className="mb-2.5 text-xs font-semibold tracking-widest uppercase" style={{ color: C.deep }}>{group.label}</p>
               <div className="flex flex-wrap gap-2.5">
-                {group.options.map((opt) => {
+                {group.options.map(opt => {
                   const sel = selected.includes(opt);
                   return (
-                    <button key={opt} type="button" onClick={() => toggleMulti(opt, current.id)}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer"
-                      style={{
-                        background: sel ? T.selBg : T.optionBg,
-                        color: sel ? T.selText : T.textSubtle,
-                        borderColor: sel ? T.selBorder : T.border,
-                        boxShadow: sel ? "0 0 24px -4px rgba(145,206,191,0.5)" : "none",
-                      }}
-                      onMouseEnter={(e) => { if (!sel) { e.currentTarget.style.borderColor = T.borderHover; e.currentTarget.style.background = T.optionBgHov; } }}
-                      onMouseLeave={(e) => { if (!sel) { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = T.optionBg; } }}
+                    <button key={opt} type="button" onClick={() => toggleMulti(opt)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200"
+                      style={{ background: sel ? C.selBg : C.optBg, color: sel ? C.text : C.subtle, borderColor: sel ? C.teal : C.border, boxShadow: sel ? "0 0 20px -4px rgba(145,206,191,0.45)" : "none" }}
+                      onMouseEnter={e => { if (!sel) { e.currentTarget.style.borderColor = C.bHover; e.currentTarget.style.background = C.optHov; } }}
+                      onMouseLeave={e => { if (!sel) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.optBg; } }}
                     >
-                      <span className="w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors"
-                        style={{
-                          borderColor: sel ? "rgba(19,24,24,0.25)" : T.border,
-                          background: sel ? "rgba(19,24,24,0.07)" : "transparent",
-                          color: T.selText,
-                        }}>
+                      <span className="w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0"
+                        style={{ borderColor: sel ? "rgba(19,24,24,0.25)" : C.border, background: sel ? "rgba(19,24,24,0.07)" : "transparent" }}>
                         {sel && <Check size={9} strokeWidth={3} />}
                       </span>
                       {opt}
@@ -965,162 +789,115 @@ export function CreatorForm() {
               </div>
             </div>
           ))}
-          {err ? <ErrorMsg msg={err} /> : selected.length > 0 && (
-            <p className="text-xs" style={{ color: T.textFaint }}>{selected.length} selected · click OK to continue</p>
-          )}
+          {fieldErr
+            ? <p className="text-sm font-medium" style={{ color: C.error }}>{fieldErr}</p>
+            : selected.length > 0 && <p className="text-xs" style={{ color: C.faint }}>{selected.length} selected · click OK to continue</p>
+          }
         </div>
       );
     }
 
-    // ── Platform links ─────────────────────────────────────────────────────
-    if (current.type === "platformlinks") {
+    // PLATFORM LINKS
+    if (cur.type === "platformlinks") {
       if (selectedPlatforms.length === 0) {
-        return <p className="text-sm" style={{ color: T.textFaint }}>Please go back and select at least one platform.</p>;
+        return <p className="text-sm" style={{ color: C.faint }}>Please go back and select at least one platform.</p>;
       }
       return (
         <div className="flex flex-col gap-6 max-w-xl w-full">
-          {selectedPlatforms.map((platform) => {
+          {selectedPlatforms.map(platform => {
             const label = platform === "Other" && otherText["platform"] ? otherText["platform"] : platform;
             const placeholder =
               platform === "Instagram" ? "instagram.com/yourhandle"
-              : platform === "TikTok" ? "tiktok.com/@yourhandle"
-              : platform === "YouTube" ? "youtube.com/@yourchannel"
+              : platform === "TikTok"   ? "tiktok.com/@yourhandle"
+              : platform === "YouTube"  ? "youtube.com/@yourchannel"
               : "yourprofilelink.com";
-            const fieldErr = platformLinkErrors[platform];
+            const pErr = platErrs[platform];
             return (
               <div key={platform}>
-                <p className="mb-2 text-xs font-semibold tracking-widest uppercase" style={{ color: T.deep }}>{label}</p>
-                <input
-                  type="text"
-                  value={platformLinkValues[platform] ?? ""}
-                  onChange={(e) => {
-                    setPlatformLinkValues((prev) => ({ ...prev, [platform]: e.target.value }));
-                    if (platformLinkErrors[platform]) {
-                      setPlatformLinkErrors((prev) => { const n = { ...prev }; delete n[platform]; return n; });
-                    }
+                <p className="mb-2 text-xs font-semibold tracking-widest uppercase" style={{ color: C.deep }}>{label}</p>
+                <input type="text" value={platLinks[platform] ?? ""}
+                  onChange={e => {
+                    setPlatLinks(p => ({ ...p, [platform]: e.target.value }));
+                    if (platErrs[platform]) setPlatErrs(p => { const n = { ...p }; delete n[platform]; return n; });
                   }}
                   placeholder={placeholder}
-                  className="w-full bg-transparent border-b-2 outline-none text-lg pb-2 pt-1 transition-colors duration-300 font-display tracking-tight"
-                  style={{ color: T.text, borderColor: fieldErr ? T.error : T.border, caretColor: T.deep }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = fieldErr ? T.error : T.teal)}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = fieldErr ? T.error : T.border)}
+                  className="w-full bg-transparent border-b-2 outline-none text-lg pb-2 pt-1 transition-colors duration-200 font-display tracking-tight"
+                  style={{ color: C.text, borderColor: pErr ? C.error : C.border, caretColor: C.deep }}
+                  onFocus={e => (e.currentTarget.style.borderColor = pErr ? C.error : C.teal)}
+                  onBlur={e => (e.currentTarget.style.borderColor = pErr ? C.error : C.border)}
                 />
-                {fieldErr && <p className="mt-1.5 text-xs font-medium" style={{ color: T.error }}>{fieldErr}</p>}
+                {pErr && <p className="mt-1.5 text-xs font-medium" style={{ color: C.error }}>{pErr}</p>}
               </div>
             );
           })}
-          {current.hint && <p className="text-xs" style={{ color: T.textFaint }}>{current.hint}</p>}
+          {cur.hint && <p className="text-xs" style={{ color: C.faint }}>{cur.hint}</p>}
         </div>
       );
     }
 
     return null;
-  };
+  }
 
-  // ── Welcome screen ─────────────────────────────────────────────────────────
-  if (!started) {
+  // ── Show OK button? ────────────────────────────────────────────────────────
+  // Select steps auto-advance on click; only show OK if "Other" is chosen
+  const showOK = cur?.type !== "select" || otherSelected;
+
+  // ── WELCOME ───────────────────────────────────────────────────────────────
+  if (screen === "welcome") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden"
-        style={{ background: T.bg }}>
-        <div className="pointer-events-none fixed -top-40 -right-40 w-[500px] h-[500px] rounded-full blur-[140px]"
-          style={{ background: "rgba(145,206,191,0.18)" }} />
-        <div className="pointer-events-none fixed bottom-0 -left-40 w-[400px] h-[400px] rounded-full blur-[120px]"
-          style={{ background: "rgba(0,98,92,0.07)" }} />
-        <header className="fixed top-6 left-6 sm:left-10 z-40">
-          <a href="/"><Logo variant="dark" /></a>
-        </header>
-        <motion.div
-          initial={{ opacity: 0, y: 28, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-lg w-full text-center"
-        >
-          <h1 style={{
-            fontFamily: "'Georgia', 'Times New Roman', serif",
-            fontWeight: 700,
-            fontStyle: "italic",
-            fontSize: "clamp(36px, 8vw, 60px)",
-            color: T.deep,
-            letterSpacing: "-0.02em",
-            margin: 0,
-            lineHeight: 1,
-            marginBottom: "20px",
-            whiteSpace: "nowrap",
-          }}>
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden" style={{ background: C.bg }}>
+        <div className="pointer-events-none fixed -top-40 -right-40 w-[500px] h-[500px] rounded-full blur-[140px]" style={{ background: "rgba(145,206,191,0.18)" }} />
+        <div className="pointer-events-none fixed bottom-0 -left-40 w-[400px] h-[400px] rounded-full blur-[120px]" style={{ background: "rgba(0,98,92,0.07)" }} />
+        <header className="fixed top-6 left-6 sm:left-10 z-40"><a href="/"><Logo variant="dark" /></a></header>
+        <motion.div initial={{ opacity: 0, y: 28, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="max-w-lg w-full text-center">
+          <h1 style={{ fontFamily: "'Georgia','Times New Roman',serif", fontWeight: 700, fontStyle: "italic", fontSize: "clamp(36px,8vw,60px)", color: C.deep, letterSpacing: "-0.02em", lineHeight: 1, marginBottom: "20px", whiteSpace: "nowrap" }}>
             Hellooo!
           </h1>
-
-          <p className="text-base sm:text-lg leading-relaxed mb-3"
-            style={{ color: "rgba(19,24,24,0.75)" }}>
+          <p className="text-base sm:text-lg leading-relaxed mb-3" style={{ color: "rgba(19,24,24,0.75)" }}>
             You're one step away from exclusive access to{" "}
-            <strong style={{ color: T.deep }}>high-value brand campaigns.</strong>
+            <strong style={{ color: C.deep }}>high-value brand campaigns.</strong>
           </p>
-          <p className="text-base leading-relaxed mb-10"
-            style={{ color: "rgba(19,24,24,0.60)" }}>
+          <p className="text-base leading-relaxed mb-10" style={{ color: "rgba(19,24,24,0.60)" }}>
             Answer a few quick questions to get started.
           </p>
-
-          <button
-            onClick={() => setStarted(true)}
+          <button onClick={() => setScreen("form")}
             className="inline-flex items-center gap-2 rounded-full px-8 text-base font-medium transition-all duration-200"
-            style={{ background: T.deep, color: "#fff", height: "52px", boxShadow: "0 8px 28px -8px rgba(0,98,92,0.45)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = T.dark)}
-            onMouseLeave={(e) => (e.currentTarget.style.background = T.deep)}
-          >
-            Get Started →
+            style={{ background: C.deep, color: "#fff", height: "52px", boxShadow: "0 8px 28px -8px rgba(0,98,92,0.45)" }}
+            onMouseEnter={e => (e.currentTarget.style.background = C.dark)}
+            onMouseLeave={e => (e.currentTarget.style.background = C.deep)}>
+            Let's go →
           </button>
-          <p className="mt-6 text-xs" style={{ color: "rgba(19,24,24,0.45)" }}>Takes less than 2 minutes</p>
         </motion.div>
       </div>
     );
   }
 
-  // ── Thank you screen ───────────────────────────────────────────────────────
-  if (submitted) {
+  // ── SUCCESS ───────────────────────────────────────────────────────────────
+  if (screen === "success") {
     return (
-      <div className="min-h-screen flex flex-col" style={{ background: T.bg }}>
-        <div className="fixed top-0 inset-x-0 h-[3px] z-50" style={{ background: T.trackBg }}>
-          <motion.div className="h-full"
-            style={{ background: `linear-gradient(90deg, ${T.deep} 0%, ${T.dark} 50%, ${T.teal} 100%)` }}
-            initial={{ width: "88%" }} animate={{ width: "100%" }}
-            transition={{ duration: 0.6, ease: "easeOut" }} />
+      <div className="min-h-screen flex flex-col" style={{ background: C.bg }}>
+        <div className="fixed top-0 inset-x-0 h-[3px] z-50" style={{ background: C.track }}>
+          <motion.div className="h-full" style={{ background: `linear-gradient(90deg,${C.deep} 0%,${C.dark} 50%,${C.teal} 100%)` }}
+            initial={{ width: "88%" }} animate={{ width: "100%" }} transition={{ duration: 0.6, ease: "easeOut" }} />
         </div>
-        <header className="fixed top-3 inset-x-0 z-40 px-6 sm:px-10">
-          <a href="/"><Logo variant="dark" /></a>
-        </header>
+        <header className="fixed top-3 inset-x-0 z-40 px-6 sm:px-10"><a href="/"><Logo variant="dark" /></a></header>
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="max-w-lg"
-          >
-            <h2 style={{
-              fontFamily: "'Georgia', 'Times New Roman', serif",
-              fontStyle: "italic",
-              fontWeight: 700,
-              fontSize: "clamp(28px, 5vw, 48px)",
-              color: T.deep,
-              letterSpacing: "-0.02em",
-              lineHeight: 1.15,
-              margin: 0,
-              marginBottom: "20px",
-            }}>
+          <motion.div initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="max-w-lg">
+            <h2 style={{ fontFamily: "'Georgia','Times New Roman',serif", fontStyle: "italic", fontWeight: 700, fontSize: "clamp(28px,5vw,48px)", color: C.deep, letterSpacing: "-0.02em", lineHeight: 1.15, margin: "0 0 20px" }}>
               You're officially on our radar.
             </h2>
-            <p className="text-lg leading-relaxed" style={{ color: T.textMuted }}>
+            <p className="text-lg leading-relaxed" style={{ color: C.muted }}>
               The Plotwise team is reviewing your profile and will get back to you{" "}
-              <strong style={{ color: T.text }}>within 24 hours.</strong>
+              <strong style={{ color: C.text }}>within 24 hours.</strong>
             </p>
-            <p className="mt-6 text-sm italic" style={{ color: T.textMuted }}>
+            <p className="mt-6 text-sm italic" style={{ color: C.muted }}>
               This is where creators stop waiting, and start choosing &{" "}
-              <strong style={{ color: T.dark }}>growing</strong>.
+              <strong style={{ color: C.dark }}>growing</strong>.
             </p>
-            <a href="/"
-              className="mt-10 inline-flex items-center gap-2 rounded-full px-7 h-12 text-sm font-medium transition-colors"
-              style={{ background: T.deep, color: "#fff" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = T.dark)}
-              onMouseLeave={(e) => (e.currentTarget.style.background = T.deep)}>
+            <a href="/" className="mt-10 inline-flex items-center gap-2 rounded-full px-7 h-12 text-sm font-medium transition-colors"
+              style={{ background: C.deep, color: "#fff" }}
+              onMouseEnter={e => (e.currentTarget.style.background = C.dark)}
+              onMouseLeave={e => (e.currentTarget.style.background = C.deep)}>
               Back to PlotWise
             </a>
           </motion.div>
@@ -1129,30 +906,26 @@ export function CreatorForm() {
     );
   }
 
-  // ── Form ───────────────────────────────────────────────────────────────────
+  // ── FORM ──────────────────────────────────────────────────────────────────
+  const progress = (step / TOTAL) * 100;
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: T.bg }}>
-      <div className="pointer-events-none fixed -top-40 -right-40 w-[500px] h-[500px] rounded-full blur-[140px]"
-        style={{ background: "rgba(145,206,191,0.18)" }} />
-      <div className="pointer-events-none fixed bottom-0 -left-40 w-[400px] h-[400px] rounded-full blur-[120px]"
-        style={{ background: "rgba(0,98,92,0.07)" }} />
+    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: C.bg }}>
+      <div className="pointer-events-none fixed -top-40 -right-40 w-[500px] h-[500px] rounded-full blur-[140px]" style={{ background: "rgba(145,206,191,0.18)" }} />
+      <div className="pointer-events-none fixed bottom-0 -left-40 w-[400px] h-[400px] rounded-full blur-[120px]" style={{ background: "rgba(0,98,92,0.07)" }} />
 
       {/* Progress bar */}
       <div className="fixed top-0 inset-x-0 z-50">
-        <div className="h-[3px] relative" style={{ background: T.trackBg }}>
+        <div className="h-[3px] relative" style={{ background: C.track }}>
           <motion.div className="h-full absolute top-0 left-0 z-20"
-            style={{ background: `linear-gradient(90deg, ${T.deep} 0%, ${T.dark} 55%, ${T.teal} 100%)` }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.4, ease: "easeOut" }} />
+            style={{ background: `linear-gradient(90deg,${C.deep} 0%,${C.dark} 55%,${C.teal} 100%)` }}
+            animate={{ width: `${progress}%` }} transition={{ duration: 0.4, ease: "easeOut" }} />
         </div>
       </div>
 
       {/* Header */}
       <header className="fixed top-10 inset-x-0 z-40 flex items-center justify-between px-6 sm:px-10 py-3">
-        <a href="/" className="opacity-80 hover:opacity-100 transition-opacity">
-          <Logo variant="dark" />
-        </a>
-        <span className="text-sm font-mono tabular-nums" style={{ color: T.textFaint }}>
+        <a href="/" className="opacity-80 hover:opacity-100 transition-opacity"><Logo variant="dark" /></a>
+        <span className="text-sm font-mono tabular-nums" style={{ color: C.faint }}>
           {String(step + 1).padStart(2, "0")} / {String(TOTAL).padStart(2, "0")}
         </span>
       </header>
@@ -1161,94 +934,87 @@ export function CreatorForm() {
       <div className="flex-1 flex items-center justify-center px-6 sm:px-10 pt-32 pb-28">
         <div className="w-full max-w-2xl">
           <AnimatePresence mode="wait" custom={dir}>
-            <motion.div key={step} custom={dir} variants={slideVariants}
-              initial="enter" animate="center" exit="exit"
+            <motion.div key={step} custom={dir} variants={slide} initial="enter" animate="center" exit="exit"
               className="flex flex-col gap-8">
 
               {/* Question */}
               <div className="flex gap-5 items-start">
-                <span className="font-mono text-base mt-1 shrink-0 tabular-nums"
-                  style={{ color: `${T.deep}80` }}>
+                <span className="font-mono text-base mt-1 shrink-0 tabular-nums" style={{ color: `${C.deep}80` }}>
                   {String(step + 1).padStart(2, "0")} →
                 </span>
-                <h2 className="font-display text-3xl sm:text-4xl lg:text-[42px] font-normal leading-[1.08] tracking-[-0.025em]"
-                  style={{ color: T.text }}>
-                  {current.question}
+                <h2 className="font-display text-3xl sm:text-4xl lg:text-[42px] font-normal leading-[1.08] tracking-[-0.025em]" style={{ color: C.text }}>
+                  {cur.question}
                 </h2>
               </div>
 
               {/* Input */}
               <div className="pl-10">{renderInput()}</div>
 
-              {/* Back + OK / Submit */}
-              {(current.type !== "select" || answer === "Other") && (
+              {/* Navigation */}
+              {showOK && (
                 <div className="pl-10 flex flex-col gap-3">
                   <div className="flex items-center gap-3">
                     {step > 0 && (
-                      <button type="button" onClick={goPrev} disabled={sending}
-                        className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-all duration-200"
-                        style={{ color: T.textMuted, background: "transparent", border: "none", cursor: sending ? "not-allowed" : "pointer" }}
-                        onMouseEnter={(e) => { if (!sending) e.currentTarget.style.color = T.text; }}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = T.textMuted)}>
+                      <button type="button" onClick={() => { setDir(-1); setStep(s => s - 1); setFieldErr(null); }} disabled={sending}
+                        className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-colors"
+                        style={{ color: C.muted, background: "transparent", border: "none", cursor: sending ? "not-allowed" : "pointer" }}
+                        onMouseEnter={e => { if (!sending) e.currentTarget.style.color = C.text; }}
+                        onMouseLeave={e => (e.currentTarget.style.color = C.muted)}>
                         <ArrowLeft size={14} /> Back
                       </button>
                     )}
-                    <button type="button" onClick={goNext} disabled={sending}
+                    <button type="button" onClick={handleOK} disabled={sending}
                       className="px-6 h-11 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2"
                       style={{
-                        background: !sending ? T.deep : T.trackBg,
-                        color: !sending ? "#fff" : T.textFaint,
-                        cursor: !sending ? "pointer" : "not-allowed",
-                        boxShadow: !sending ? `0 8px 28px -8px rgba(0,98,92,0.35)` : "none",
-                        opacity: canAdvance ? 1 : 0.5,
+                        background: sending ? C.track : C.deep,
+                        color: sending ? C.muted : "#fff",
+                        cursor: sending ? "not-allowed" : "pointer",
+                        boxShadow: sending ? "none" : "0 6px 20px -6px rgba(0,98,92,0.45)",
                       }}
-                      onMouseEnter={(e) => { if (!sending) e.currentTarget.style.background = T.dark; }}
-                      onMouseLeave={(e) => { if (!sending) e.currentTarget.style.background = T.deep; }}>
+                      onMouseEnter={e => { if (!sending) e.currentTarget.style.background = C.dark; }}
+                      onMouseLeave={e => { if (!sending) e.currentTarget.style.background = C.deep; }}>
                       {sending ? (
-                        <>
-                          <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="31.4 31.4" />
-                          </svg>
-                          Sending…
-                        </>
-                      ) : step === TOTAL - 1 ? "Submit" : "OK →"}
+                        <><svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" strokeLinecap="round"/></svg> Submitting…</>
+                      ) : step < TOTAL - 1 ? "OK ✓" : "Submit →"}
                     </button>
                   </div>
-                  {sendError && (
-                    <p className="text-sm font-medium" style={{ color: T.error }}>{sendError}</p>
+                  {submitErr && <p className="text-sm font-medium" style={{ color: C.error }}>{submitErr}</p>}
+                  {!otherSelected && step < TOTAL - 1 && (
+                    <p className="text-xs" style={{ color: C.faint }}>
+                      Press <kbd className="px-1.5 py-0.5 rounded font-mono text-[10px]" style={{ border: `1px solid ${C.border}`, color: C.subtle }}>Enter ↵</kbd> to continue
+                    </p>
                   )}
                 </div>
               )}
 
-              {/* Back only — for auto-advance selects */}
-              {current.type === "select" && answer !== "Other" && step > 0 && (
+              {/* Back button for select steps (when OK is hidden) */}
+              {!showOK && step > 0 && (
                 <div className="pl-10">
-                  <button type="button" onClick={goPrev}
-                    className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-all duration-200"
-                    style={{ color: T.textMuted, background: "transparent", border: "none", cursor: "pointer" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = T.text)}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = T.textMuted)}>
+                  <button type="button" onClick={() => { setDir(-1); setStep(s => s - 1); setFieldErr(null); }}
+                    className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-colors"
+                    style={{ color: C.muted, background: "transparent", border: "none" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = C.text)}
+                    onMouseLeave={e => (e.currentTarget.style.color = C.muted)}>
                     <ArrowLeft size={14} /> Back
                   </button>
                 </div>
               )}
+
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Dots */}
-      <div className="fixed bottom-0 inset-x-0 flex items-center justify-center px-6 sm:px-10 py-6">
-        <div className="flex items-center gap-1.5">
-          {STEPS.map((_, i) => (
-            <div key={i} className="rounded-full transition-all duration-300"
-              style={{
-                width: i === step ? 16 : 6,
-                height: 6,
-                background: i === step ? T.deep : i < step ? T.dotDone : T.dotInactive,
-              }} />
-          ))}
-        </div>
+      {/* Step dots */}
+      <div className="fixed bottom-8 inset-x-0 flex justify-center gap-1.5 z-40">
+        {STEPS.map((_, i) => (
+          <div key={i} className="rounded-full transition-all duration-300"
+            style={{
+              width: i === step ? "20px" : "6px",
+              height: "6px",
+              background: i < step ? C.deep : i === step ? C.dark : "rgba(19,24,24,0.12)",
+            }} />
+        ))}
       </div>
     </div>
   );
