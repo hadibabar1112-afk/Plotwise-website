@@ -368,11 +368,11 @@ export function CreatorForm() {
       return null;
     }
 
-    // Phone — numbers only
+    // Phone — optional; if provided must contain only digits, spaces, dashes, or parentheses
     if (current.type === "phone") {
       const str = (val as string).trim();
-      if (!str) return "Phone number is required.";
-      if (!/^\d+$/.test(str)) return "Only numbers are allowed — please remove any letters or special characters.";
+      if (!str) return null; // field is optional — skip validation if empty
+      if (!/^[\d\s\-()+]+$/.test(str)) return "Please enter a valid phone number (digits only).";
       return null;
     }
 
