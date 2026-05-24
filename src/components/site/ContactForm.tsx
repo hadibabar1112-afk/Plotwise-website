@@ -45,7 +45,8 @@ const STEPS: StepDef[] = [
     section: 1, part: null, sectionLabel: "Brand Basics",
     id: "websiteUrl", type: "url",
     question: "What's your website URL?",
-    placeholder: "https://yourbrand.com",
+    placeholder: "yourbrand.com",
+    // optional — validated only if filled
   },
   {
     section: 1, part: null, sectionLabel: "Brand Basics",
@@ -53,6 +54,7 @@ const STEPS: StepDef[] = [
     question: "Your Instagram & TikTok handles?",
     placeholder: "@yourbrand, @yourtiktok",
     hint: "Separate with a comma",
+    required: true,
   },
   {
     section: 1, part: null, sectionLabel: "Brand Basics",
@@ -67,12 +69,14 @@ const STEPS: StepDef[] = [
     id: "adSpend", type: "multiselect",
     question: "Monthly ad spend range?",
     options: ["Under $5k", "$5k – $15k", "$15k – $30k", "$30k – $75k", "$75k+", "Other"],
+    required: true,
   },
   {
     section: 2, part: "A", sectionLabel: "Where You Are Now",
     id: "platforms", type: "multiselect",
     question: "Platforms you're currently running paid ads on?",
     options: ["Meta", "TikTok", "Google", "Other"],
+    required: true,
   },
   // ── Section 2B: Where You Are Now ──
   {
@@ -80,6 +84,7 @@ const STEPS: StepDef[] = [
     id: "creativeHandling", type: "multiselect",
     question: "How are you currently handling creative?",
     options: ["In-house", "Freelancers", "Agency", "Mix", "Nothing structured"],
+    required: true,
   },
   {
     section: 2, part: "B", sectionLabel: "Where You Are Now",
@@ -87,16 +92,11 @@ const STEPS: StepDef[] = [
     question: "Biggest creative challenge right now?",
     placeholder: "Tell us in 2–3 sentences…",
     hint: "Be as specific as you like",
+    required: true,
   },
 ];
 
 const TOTAL = STEPS.length;
-
-const SECTIONS = [
-  { label: "Brand Basics",        range: [0, 5] as [number, number], center: 25 },
-  { label: "2A · Where You Are",  range: [6, 7] as [number, number], center: 65 },
-  { label: "2B · Where You Are",  range: [8, 9] as [number, number], center: 85 },
-];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const slideVariants: any = {
@@ -135,7 +135,65 @@ const T = {
   divider:     "rgba(19,24,24,0.12)",
   dotInactive: "rgba(19,24,24,0.12)",
   dotDone:     "rgba(0,98,92,0.35)",
+  error:       "#c0392b",
+  errorBg:     "rgba(192,57,43,0.06)",
 };
+
+function validateStep(
+  step: number,
+  answers: Record<string, AnswerValue>,
+  otherText: Record<string, string>
+): string | null {
+  const cur = STEPS[step];
+  if (!cur) return null;
+
+  const val = answers[cur.id];
+
+  // ── Email ──────────────────────────────────────────────────────────────────
+  if (cur.id === "email") {
+    const str = (val as string ?? "").trim();
+    if (!str) return "Email address is required.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str))
+      return "That doesn't look like a valid email — please check the format.";
+    return null;
+  }
+
+  // ── URL (optional, but validated if filled) ────────────────────────────────
+  if (cur.id === "websiteUrl") {
+    const str = (val as string ?? "").trim();
+    if (!str) return null; // optional — skip if empty
+    const withProtocol = /^https?:\/\//i.test(str) ? str : `https://${str}`;
+    try {
+      const u = new URL(withProtocol);
+      // Must have at least one dot in the hostname (rejects bare words like "localhost")
+      if (!u.hostname.includes("."))
+        return "Enter a valid URL — e.g. yourbrand.com or yourbrand.beauty";
+    } catch {
+      return "Enter a valid URL — e.g. yourbrand.com or yourbrand.beauty";
+    }
+    return null;
+  }
+
+  // ── Required fields ────────────────────────────────────────────────────────
+  if (cur.required) {
+    if (cur.type === "multiselect") {
+      const arr = (val as string[]) ?? [];
+      if (arr.length === 0) return "Please select at least one option.";
+      if (arr.includes("Other") && !(otherText[cur.id] ?? "").trim())
+        return "Please describe what you mean by 'Other'.";
+    } else if (cur.type === "select") {
+      const str = (val as string ?? "").trim();
+      if (!str) return "Please choose an option.";
+      if (str === "Other" && !(otherText[cur.id] ?? "").trim())
+        return "Please describe what you mean by 'Other'.";
+    } else {
+      const str = (val as string ?? "").trim();
+      if (!str) return "This field is required.";
+    }
+  }
+
+  return null;
+}
 
 export function ContactForm() {
   const [step, setStep] = useState(0);
@@ -145,6 +203,8 @@ export function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [fieldError, setFieldError] = useState<string | null>(null);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const otherInputRef = useRef<HTMLInputElement>(null);
@@ -157,27 +217,32 @@ export function ContactForm() {
     (current?.type === "select" && answer === "Other") ||
     (current?.type === "multiselect" && (answer as string[]).includes("Other"));
 
-  const otherFilled = (otherText[current?.id ?? ""] ?? "").trim().length > 0;
-
-  const canAdvance = (() => {
-    if (otherSelected && !otherFilled) return false;
-    if (current?.required) {
-      if (current.type === "multiselect") return (answer as string[]).length > 0;
-      return (answer as string).trim().length > 0;
-    }
-    return true;
-  })();
+  const setAns = useCallback(
+    (val: AnswerValue) => {
+      setAnswers((prev) => ({ ...prev, [current.id]: val }));
+      setFieldError(null);
+    },
+    [current?.id]
+  );
 
   const goNext = useCallback(async () => {
+    // Run validation — show inline error instead of blocking the button
+    const err = validateStep(step, answers, otherText);
+    if (err) {
+      setFieldError(err);
+      return;
+    }
+    setFieldError(null);
+
     if (step < TOTAL - 1) {
       setDir(1);
       setStep((s) => s + 1);
     } else {
-      // Final step — send email then show thank-you
+      // Final step — send then show thank-you
       setSending(true);
       setSendError(null);
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000); // 15 s hard cap
+      const timeout = setTimeout(() => controller.abort(), 15000);
       try {
         const res = await fetch("/api/contact", {
           method: "POST",
@@ -206,19 +271,17 @@ export function ContactForm() {
   }, [step, answers, otherText]);
 
   const goPrev = useCallback(() => {
-    if (step > 0) { setDir(-1); setStep((s) => s - 1); }
+    if (step > 0) {
+      setDir(-1);
+      setStep((s) => s - 1);
+      setFieldError(null);
+    }
   }, [step]);
-
-  const setAns = useCallback(
-    (val: AnswerValue) => setAnswers((prev) => ({ ...prev, [current.id]: val })),
-    [current?.id]
-  );
 
   const handleSelectChoice = useCallback(
     (opt: string) => {
       setAns(opt);
       if (opt === "Other") {
-        // Don't auto-advance — let user type what they mean
         setTimeout(() => otherInputRef.current?.focus(), 100);
         return;
       }
@@ -243,36 +306,41 @@ export function ContactForm() {
     [answers, current?.id, setAns]
   );
 
+  // Clear field error when step changes
+  useEffect(() => {
+    setFieldError(null);
+  }, [step]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (submitted) return;
-      if (e.key === "Enter" && current.type !== "textarea" && current.type !== "select" && current.type !== "multiselect") {
-        if (canAdvance) goNext();
+      if (
+        e.key === "Enter" &&
+        current.type !== "textarea" &&
+        current.type !== "select" &&
+        current.type !== "multiselect"
+      ) {
+        goNext();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [canAdvance, goNext, current?.type, submitted]);
+  }, [goNext, current?.type, submitted]);
 
   useEffect(() => {
     if (submitted) return;
     const t = setTimeout(() => {
       if (current.type === "textarea") textareaRef.current?.focus();
-      else if (current.type === "text" || current.type === "url" || current.type === "email") inputRef.current?.focus();
+      else if (current.type === "text" || current.type === "url" || current.type === "email")
+        inputRef.current?.focus();
     }, 450);
     return () => clearTimeout(t);
   }, [step, current?.type, submitted]);
 
-  const getSectionBadge = () => {
-    if (!current) return "";
-    if (current.section === 1) return "Section 1 — Brand Basics";
-    if (current.part === "A") return "Section 2A — Where You Are Now";
-    return "Section 2B — Where You Are Now";
-  };
-
   const renderInput = () => {
     if (!current) return null;
 
+    const hasError = !!fieldError;
     const inputBase =
       "w-full bg-transparent border-b-2 outline-none text-xl sm:text-2xl pb-3 pt-1 transition-colors duration-300 font-display tracking-tight";
 
@@ -281,31 +349,43 @@ export function ContactForm() {
         <div className="w-full max-w-xl">
           <input
             ref={inputRef}
-            type={current.type}
+            type={current.type === "url" ? "text" : current.type}
             value={answer as string}
             onChange={(e) => setAns(e.target.value)}
             placeholder={current.placeholder}
             className={inputBase}
             style={{
               color: T.text,
-              borderColor: T.border,
+              borderColor: hasError ? T.error : T.border,
               caretColor: T.deep,
             }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = T.teal)}
-            onBlur={(e) => (e.currentTarget.style.borderColor = T.border)}
-            onKeyDown={(e) => { if (e.key === "Enter" && canAdvance) goNext(); }}
+            onFocus={(e) =>
+              (e.currentTarget.style.borderColor = hasError ? T.error : T.teal)
+            }
+            onBlur={(e) =>
+              (e.currentTarget.style.borderColor = hasError ? T.error : T.border)
+            }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") goNext();
+            }}
           />
-          {current.hint && <p className="mt-3 text-sm" style={{ color: T.textFaint }}>{current.hint}</p>}
-          <p className="mt-5 text-xs tracking-wide" style={{ color: T.textFaint }}>
-            Press{" "}
-            <kbd
-              className="px-1.5 py-0.5 rounded font-mono text-[10px]"
-              style={{ border: `1px solid ${T.border}`, color: T.textMuted }}
-            >
-              Enter ↵
-            </kbd>{" "}
-            to continue
-          </p>
+          {current.hint && (
+            <p className="mt-3 text-sm" style={{ color: T.textFaint }}>
+              {current.hint}
+            </p>
+          )}
+          {!hasError && (
+            <p className="mt-5 text-xs tracking-wide" style={{ color: T.textFaint }}>
+              Press{" "}
+              <kbd
+                className="px-1.5 py-0.5 rounded font-mono text-[10px]"
+                style={{ border: `1px solid ${T.border}`, color: T.textMuted }}
+              >
+                Enter ↵
+              </kbd>{" "}
+              to continue
+            </p>
+          )}
         </div>
       );
     }
@@ -324,20 +404,35 @@ export function ContactForm() {
             placeholder={current.placeholder}
             rows={1}
             className={`${inputBase} resize-none leading-relaxed`}
-            style={{ color: T.text, borderColor: T.border, caretColor: T.deep, overflow: "hidden" }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = T.teal)}
-            onBlur={(e) => (e.currentTarget.style.borderColor = T.border)}
+            style={{
+              color: T.text,
+              borderColor: hasError ? T.error : T.border,
+              caretColor: T.deep,
+              overflow: "hidden",
+            }}
+            onFocus={(e) =>
+              (e.currentTarget.style.borderColor = hasError ? T.error : T.teal)
+            }
+            onBlur={(e) =>
+              (e.currentTarget.style.borderColor = hasError ? T.error : T.border)
+            }
           />
-          {current.hint && <p className="mt-2 text-sm" style={{ color: T.textFaint }}>{current.hint}</p>}
-          <p className="mt-4 text-xs" style={{ color: T.textFaint }}>
-            <kbd
-              className="px-1.5 py-0.5 rounded font-mono text-[10px]"
-              style={{ border: `1px solid ${T.border}`, color: T.textMuted }}
-            >
-              Shift + Enter
-            </kbd>{" "}
-            for new line
-          </p>
+          {current.hint && (
+            <p className="mt-2 text-sm" style={{ color: T.textFaint }}>
+              {current.hint}
+            </p>
+          )}
+          {!hasError && (
+            <p className="mt-4 text-xs" style={{ color: T.textFaint }}>
+              <kbd
+                className="px-1.5 py-0.5 rounded font-mono text-[10px]"
+                style={{ border: `1px solid ${T.border}`, color: T.textMuted }}
+              >
+                Shift + Enter
+              </kbd>{" "}
+              for new line
+            </p>
+          )}
         </div>
       );
     }
@@ -360,8 +455,14 @@ export function ContactForm() {
                     borderColor: sel ? T.selBorder : T.border,
                     boxShadow: sel ? "0 0 24px -4px rgba(145,206,191,0.5)" : "none",
                   }}
-                  onMouseEnter={(e) => { if (!sel) e.currentTarget.style.borderColor = T.borderHover; if (!sel) e.currentTarget.style.background = T.optionBgHov; }}
-                  onMouseLeave={(e) => { if (!sel) e.currentTarget.style.borderColor = T.border; if (!sel) e.currentTarget.style.background = T.optionBg; }}
+                  onMouseEnter={(e) => {
+                    if (!sel) e.currentTarget.style.borderColor = T.borderHover;
+                    if (!sel) e.currentTarget.style.background = T.optionBgHov;
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!sel) e.currentTarget.style.borderColor = T.border;
+                    if (!sel) e.currentTarget.style.background = T.optionBg;
+                  }}
                 >
                   <span
                     className="text-[10px] font-mono shrink-0 w-4 h-4 rounded flex items-center justify-center border transition-colors"
@@ -389,13 +490,18 @@ export function ContactForm() {
                 ref={otherInputRef}
                 type="text"
                 value={otherText[current.id] ?? ""}
-                onChange={(e) => setOtherText((prev) => ({ ...prev, [current.id]: e.target.value }))}
+                onChange={(e) => {
+                  setOtherText((prev) => ({ ...prev, [current.id]: e.target.value }));
+                  setFieldError(null);
+                }}
                 placeholder="Please describe…"
                 className="w-full bg-transparent border-b-2 outline-none text-lg pb-2 pt-1 transition-colors duration-300 font-display tracking-tight"
                 style={{ color: T.text, borderColor: T.border, caretColor: T.deep }}
                 onFocus={(e) => (e.currentTarget.style.borderColor = T.teal)}
                 onBlur={(e) => (e.currentTarget.style.borderColor = T.border)}
-                onKeyDown={(e) => { if (e.key === "Enter" && otherFilled) goNext(); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") goNext();
+                }}
               />
             </motion.div>
           )}
@@ -422,8 +528,14 @@ export function ContactForm() {
                     borderColor: sel ? T.selBorder : T.border,
                     boxShadow: sel ? "0 0 24px -4px rgba(145,206,191,0.5)" : "none",
                   }}
-                  onMouseEnter={(e) => { if (!sel) e.currentTarget.style.borderColor = T.borderHover; if (!sel) e.currentTarget.style.background = T.optionBgHov; }}
-                  onMouseLeave={(e) => { if (!sel) e.currentTarget.style.borderColor = T.border; if (!sel) e.currentTarget.style.background = T.optionBg; }}
+                  onMouseEnter={(e) => {
+                    if (!sel) e.currentTarget.style.borderColor = T.borderHover;
+                    if (!sel) e.currentTarget.style.background = T.optionBgHov;
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!sel) e.currentTarget.style.borderColor = T.border;
+                    if (!sel) e.currentTarget.style.background = T.optionBg;
+                  }}
                 >
                   <span
                     className="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
@@ -450,7 +562,10 @@ export function ContactForm() {
                 ref={otherInputRef}
                 type="text"
                 value={otherText[current.id] ?? ""}
-                onChange={(e) => setOtherText((prev) => ({ ...prev, [current.id]: e.target.value }))}
+                onChange={(e) => {
+                  setOtherText((prev) => ({ ...prev, [current.id]: e.target.value }));
+                  setFieldError(null);
+                }}
                 placeholder="Please describe…"
                 className="w-full bg-transparent border-b-2 outline-none text-lg pb-2 pt-1 transition-colors duration-300 font-display tracking-tight"
                 style={{ color: T.text, borderColor: T.border, caretColor: T.deep }}
@@ -459,7 +574,7 @@ export function ContactForm() {
               />
             </motion.div>
           )}
-          {selected.length > 0 && (
+          {selected.length > 0 && !hasError && (
             <p className="text-xs" style={{ color: T.textFaint }}>
               {selected.length} selected · click OK to continue
             </p>
@@ -478,14 +593,18 @@ export function ContactForm() {
         <div className="fixed top-0 inset-x-0 h-[3px] z-50" style={{ background: T.trackBg }}>
           <motion.div
             className="h-full"
-            style={{ background: `linear-gradient(90deg, ${T.deep} 0%, ${T.dark} 50%, ${T.teal} 100%)` }}
+            style={{
+              background: `linear-gradient(90deg, ${T.deep} 0%, ${T.dark} 50%, ${T.teal} 100%)`,
+            }}
             initial={{ width: "87.5%" }}
             animate={{ width: "100%" }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           />
         </div>
         <header className="fixed top-3 inset-x-0 z-40 px-6 sm:px-10">
-          <a href="/"><Logo variant="dark" /></a>
+          <a href="/">
+            <Logo variant="dark" />
+          </a>
         </header>
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
           <motion.div
@@ -507,7 +626,8 @@ export function ContactForm() {
               We'll be in touch.
             </h2>
             <p className="mt-5 text-lg leading-relaxed" style={{ color: T.textMuted }}>
-              Thanks for sharing. We review every submission and only work with brands we know we can grow. Expect to hear from us within 48 hours.
+              Thanks for sharing. We review every submission and only work with brands we know
+              we can grow. Expect to hear from us within 48 hours.
             </p>
             <a
               href="/"
@@ -526,12 +646,19 @@ export function ContactForm() {
 
   // ── Form ──
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: T.bg }}>
+    <div
+      className="min-h-screen flex flex-col relative overflow-hidden"
+      style={{ background: T.bg }}
+    >
       {/* Subtle background glows */}
-      <div className="pointer-events-none fixed -top-40 -right-40 w-[500px] h-[500px] rounded-full blur-[140px]"
-        style={{ background: "rgba(145,206,191,0.18)" }} />
-      <div className="pointer-events-none fixed bottom-0 -left-40 w-[400px] h-[400px] rounded-full blur-[120px]"
-        style={{ background: "rgba(0,98,92,0.07)" }} />
+      <div
+        className="pointer-events-none fixed -top-40 -right-40 w-[500px] h-[500px] rounded-full blur-[140px]"
+        style={{ background: "rgba(145,206,191,0.18)" }}
+      />
+      <div
+        className="pointer-events-none fixed bottom-0 -left-40 w-[400px] h-[400px] rounded-full blur-[120px]"
+        style={{ background: "rgba(0,98,92,0.07)" }}
+      />
 
       {/* ── Progress bar ── */}
       <div className="fixed top-0 inset-x-0 z-50">
@@ -545,7 +672,9 @@ export function ContactForm() {
           ))}
           <motion.div
             className="h-full absolute top-0 left-0 z-20"
-            style={{ background: `linear-gradient(90deg, ${T.deep} 0%, ${T.dark} 55%, ${T.teal} 100%)` }}
+            style={{
+              background: `linear-gradient(90deg, ${T.deep} 0%, ${T.dark} 55%, ${T.teal} 100%)`,
+            }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           />
@@ -577,15 +706,25 @@ export function ContactForm() {
             >
               {/* Question */}
               <div className="flex gap-5 items-start">
-                <span className="font-mono text-base mt-1 shrink-0 tabular-nums" style={{ color: `${T.deep}80` }}>
+                <span
+                  className="font-mono text-base mt-1 shrink-0 tabular-nums"
+                  style={{ color: `${T.deep}80` }}
+                >
                   {String(step + 1).padStart(2, "0")} →
                 </span>
-                <h2
-                  className="font-display text-3xl sm:text-4xl lg:text-[42px] font-normal leading-[1.08] tracking-[-0.025em]"
-                  style={{ color: T.text }}
-                >
-                  {current.question}
-                </h2>
+                <div>
+                  <h2
+                    className="font-display text-3xl sm:text-4xl lg:text-[42px] font-normal leading-[1.08] tracking-[-0.025em]"
+                    style={{ color: T.text }}
+                  >
+                    {current.question}
+                  </h2>
+                  {current.id === "websiteUrl" && (
+                    <p className="mt-2 text-sm" style={{ color: T.textFaint }}>
+                      Optional
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Input */}
@@ -600,8 +739,15 @@ export function ContactForm() {
                         onClick={goPrev}
                         disabled={sending}
                         className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-all duration-200"
-                        style={{ color: T.textMuted, background: "transparent", border: "none", cursor: sending ? "not-allowed" : "pointer" }}
-                        onMouseEnter={(e) => { if (!sending) e.currentTarget.style.color = T.text; }}
+                        style={{
+                          color: T.textMuted,
+                          background: "transparent",
+                          border: "none",
+                          cursor: sending ? "not-allowed" : "pointer",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!sending) e.currentTarget.style.color = T.text;
+                        }}
                         onMouseLeave={(e) => (e.currentTarget.style.color = T.textMuted)}
                       >
                         <ArrowLeft size={14} />
@@ -610,39 +756,86 @@ export function ContactForm() {
                     )}
                     <button
                       onClick={goNext}
-                      disabled={!canAdvance || sending}
+                      disabled={sending}
                       className="px-6 h-11 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2"
                       style={{
-                        background: canAdvance && !sending ? T.deep : T.trackBg,
-                        color: canAdvance && !sending ? "#fff" : T.textFaint,
-                        cursor: canAdvance && !sending ? "pointer" : "not-allowed",
-                        boxShadow: canAdvance && !sending ? `0 8px 28px -8px rgba(0,98,92,0.35)` : "none",
+                        background: sending ? T.trackBg : T.deep,
+                        color: sending ? T.textFaint : "#fff",
+                        cursor: sending ? "not-allowed" : "pointer",
+                        boxShadow: sending ? "none" : `0 8px 28px -8px rgba(0,98,92,0.35)`,
                       }}
-                      onMouseEnter={(e) => { if (canAdvance && !sending) e.currentTarget.style.background = T.dark; }}
-                      onMouseLeave={(e) => { if (canAdvance && !sending) e.currentTarget.style.background = T.deep; }}
+                      onMouseEnter={(e) => {
+                        if (!sending) e.currentTarget.style.background = T.dark;
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!sending) e.currentTarget.style.background = T.deep;
+                      }}
                     >
                       {sending ? (
                         <>
-                          <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="31.4 31.4" />
+                          <svg
+                            className="animate-spin"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeDasharray="31.4 31.4"
+                            />
                           </svg>
                           Sending…
                         </>
-                      ) : step === TOTAL - 1 ? "Submit" : "OK"}
+                      ) : step === TOTAL - 1 ? (
+                        "Submit"
+                      ) : (
+                        "OK"
+                      )}
                     </button>
                   </div>
+
+                  {/* Inline field error */}
+                  {fieldError && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-sm font-medium flex items-center gap-1.5"
+                      style={{ color: T.error }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                      </svg>
+                      {fieldError}
+                    </motion.p>
+                  )}
+
+                  {/* Send error */}
                   {sendError && (
-                    <p className="text-sm" style={{ color: "#c0392b" }}>{sendError}</p>
+                    <p className="text-sm" style={{ color: T.error }}>
+                      {sendError}
+                    </p>
                   )}
                 </div>
               )}
+
               {/* Back only — for auto-advance selects */}
               {current.type === "select" && answer !== "Other" && step > 0 && (
                 <div className="pl-10">
                   <button
                     onClick={goPrev}
                     className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-all duration-200"
-                    style={{ color: T.textMuted, background: "transparent", border: "none", cursor: "pointer" }}
+                    style={{
+                      color: T.textMuted,
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
                     onMouseEnter={(e) => (e.currentTarget.style.color = T.text)}
                     onMouseLeave={(e) => (e.currentTarget.style.color = T.textMuted)}
                   >
