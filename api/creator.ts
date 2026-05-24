@@ -1,23 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Resend } from "resend";
-import { google } from "googleapis";
-
-// ── Sheet config ──────────────────────────────────────────────────────────────
-const SPREADSHEET_ID = "11ox-dim8JdSkI_YtWhzEjKNNUqWiUhoobQW_fnrlWFY";
-const SHEET_NAME     = "Creators";
-
-const HEADERS = [
-  "Timestamp", "Full Name", "Email", "Phone / WhatsApp", "Country",
-  "Platform(s)", "Profile Link(s)", "Follower Count", "Niche",
-  "UGC Samples", "Content Formats", "Age Range", "Skin / Tone / Hair",
-  "Content Style", "Availability", "Turnaround",
-];
-
-const FIELDS = [
-  "name", "email", "phone", "location", "platform", "profileLink",
-  "followerCount", "niche", "ugcSamples", "contentFormats",
-  "ageRange", "skinToneHair", "contentStyle", "availability", "turnaround",
-];
 
 // ── Email labels ──────────────────────────────────────────────────────────────
 const LABELS: Record<string, string> = {
@@ -48,59 +30,21 @@ function fmt(id: string, val: string | string[] | undefined, otherText: Record<s
   return String(val);
 }
 
-// ── Google Sheets direct write ────────────────────────────────────────────────
+// ── Google Sheets via webhook ─────────────────────────────────────────────────
+const CREATOR_SHEET_WEBHOOK = process.env.CREATOR_SHEET_WEBHOOK ?? "";
+
 async function writeToSheet(
   answers: Record<string, string | string[]>,
   otherText: Record<string, string>
 ): Promise<void> {
-  const keyEnv = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!keyEnv) throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY not set");
-
-  // Key is stored base64-encoded to avoid JSON escaping issues in env vars
-  const credentials = JSON.parse(Buffer.from(keyEnv, "base64").toString("utf-8"));
-
-  const auth = new google.auth.GoogleAuth({
-    credentials,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  if (!CREATOR_SHEET_WEBHOOK) throw new Error("CREATOR_SHEET_WEBHOOK not set");
+  const res = await fetch(CREATOR_SHEET_WEBHOOK, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ answers, otherText }),
   });
-
-  const sheets = google.sheets({ version: "v4", auth });
-
-  // Ensure the sheet exists and has a header row
-  const existing = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_NAME}!A1:A1`,
-  }).catch(() => null);
-
-  const hasHeader = !!(existing?.data?.values?.length);
-  if (!hasHeader) {
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A1`,
-      valueInputOption: "RAW",
-      requestBody: { values: [HEADERS] },
-    });
-    console.log("Creator sheet: header row written");
-  }
-
-  // Build and append data row
-  const timestamp = new Date().toLocaleString("en-US", {
-    timeZone: "Asia/Karachi",
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", hour12: false,
-  });
-
-  const row = [timestamp, ...FIELDS.map((f) => fmt(f, answers[f] as string | string[], otherText))];
-
-  await sheets.spreadsheets.values.append({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_NAME}!A:P`,
-    valueInputOption: "RAW",
-    insertDataOption: "INSERT_ROWS",
-    requestBody: { values: [row] },
-  });
-
-  console.log("Creator sheet: row appended successfully");
+  const text = await res.text();
+  console.log("Creator sheet response:", res.status, text.slice(0, 200));
 }
 
 // ── Email HTML ────────────────────────────────────────────────────────────────
@@ -176,7 +120,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const replyEmail  = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) ? rawEmail : undefined;
   const creatorName = (answers.name  as string) || "Unknown Creator";
 
-  // ── 1. Google Sheets (direct API — no Apps Script) ────────────────────────
+  // ── 1. Google Sheets ──────────────────────────────────────────────────────
   try {
     await writeToSheet(answers, otherText ?? {});
   } catch (err) {
