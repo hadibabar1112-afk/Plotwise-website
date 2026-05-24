@@ -13,6 +13,8 @@ const LABELS: Record<string, string> = {
   platforms:        "Platforms Running Paid Ads",
   creativeHandling: "How They Handle Creative",
   challenge:        "Biggest Creative Challenge",
+  scheduledDate:    "Preferred Call Date",
+  scheduledTime:    "Preferred Call Time (US Eastern)",
 };
 
 function formatAnswer(
