@@ -113,6 +113,14 @@ const STEPS: StepDef[] = [
 
 const TOTAL = STEPS.length;
 
+// ── Analytics ─────────────────────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function gtagEvent(name: string, params?: Record<string, string | number>) {
+  if (typeof window !== "undefined" && typeof (window as any).gtag === "function") {
+    (window as any).gtag("event", name, params ?? {});
+  }
+}
+
 const TIME_SLOTS = [
   "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
   "12:00 PM", "12:30 PM", "1:00 PM",  "1:30 PM",  "2:00 PM",  "2:30 PM",
@@ -441,6 +449,7 @@ export function ContactForm() {
     setFieldError(null);
 
     if (step < TOTAL - 1) {
+      gtagEvent("contact_form_step_complete", { step_index: step, step_id: current.id });
       setDir(1);
       setStep((s) => s + 1);
     } else {
@@ -460,10 +469,12 @@ export function ContactForm() {
           const data = await res.json().catch(() => ({}));
           throw new Error((data as { error?: string }).error || "server error");
         }
+        gtagEvent("contact_form_submit");
         setSubmitted(true);
       } catch (err) {
         clearTimeout(timeout);
         const isTimeout = err instanceof Error && err.name === "AbortError";
+        gtagEvent("contact_form_error", { error_type: isTimeout ? "timeout" : "server" });
         setSendError(
           isTimeout
             ? "Request timed out — please check your connection and try again."
@@ -501,6 +512,9 @@ export function ContactForm() {
     },
     [answers, current?.id, setAns]
   );
+
+  // Fire once when the form first mounts
+  useEffect(() => { gtagEvent("contact_form_start"); }, []);
 
   useEffect(() => { setFieldError(null); }, [step]);
 

@@ -244,6 +244,14 @@ const slide = {
   exit:  (d: number) => ({ y: d * -36, opacity: 0, filter: "blur(6px)", transition: { duration: 0.22, ease: "easeIn" } }),
 };
 
+// ── Analytics ─────────────────────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function gtagEvent(name: string, params?: Record<string, string | number>) {
+  if (typeof window !== "undefined" && typeof (window as any).gtag === "function") {
+    (window as any).gtag("event", name, params ?? {});
+  }
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export function CreatorForm() {
   const [screen,  setScreen]  = useState<"welcome" | "form" | "success">("welcome");
@@ -418,9 +426,11 @@ export function CreatorForm() {
         const body = await res.json().catch(() => ({}));
         throw new Error((body as { error?: string }).error ?? "server error");
       }
+      gtagEvent("creator_form_submit");
       setScreen("success");
     } catch (err) {
       const isTimeout = err instanceof Error && err.name === "AbortError";
+      gtagEvent("creator_form_error", { error_type: isTimeout ? "timeout" : "server" });
       setSubmitErr(isTimeout
         ? "Request timed out — please check your connection and try again."
         : "Something went wrong. Please try again.");
@@ -435,6 +445,7 @@ export function CreatorForm() {
     const a = overrideAnswers ?? answers;
     setFieldErr(null);
     if (step < TOTAL - 1) {
+      gtagEvent("creator_form_step_complete", { step_index: step, step_id: cur.id });
       setDir(1);
       setStep(s => s + 1);
     } else {
@@ -860,7 +871,7 @@ export function CreatorForm() {
           <p className="text-base leading-relaxed mb-10" style={{ color: "rgba(19,24,24,0.60)" }}>
             Answer a few quick questions to get started.
           </p>
-          <button onClick={() => setScreen("form")}
+          <button onClick={() => { gtagEvent("creator_form_start"); setScreen("form"); }}
             className="inline-flex items-center gap-2 rounded-full px-8 text-base font-medium transition-all duration-200"
             style={{ background: C.deep, color: "#fff", height: "52px", boxShadow: "0 8px 28px -8px rgba(0,98,92,0.45)" }}
             onMouseEnter={e => (e.currentTarget.style.background = C.dark)}
