@@ -1,5 +1,13 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode, type CSSProperties } from "react";
 
+// ── Analytics helper ──────────────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function gtagEvent(name: string, params?: Record<string, string | number>) {
+  if (typeof window !== "undefined" && typeof (window as any).gtag === "function") {
+    (window as any).gtag("event", name, params ?? {});
+  }
+}
+
 export type CaseStudyMetric = { value: string; label: string };
 export type CaseStudyMeta = { term: string; def: string };
 export type CaseStudyMedia = { src: string; caption: string; poster?: string };
@@ -51,11 +59,12 @@ export function CaseStudyPopup({
       setPhase("peek");
       return;
     }
+    gtagEvent("case_study_open", { case_study: data.brand });
     const id = requestAnimationFrame(() => {
       requestAnimationFrame(() => setMounted(true));
     });
     return () => cancelAnimationFrame(id);
-  }, [open]);
+  }, [open, data.brand]);
 
   // When data changes (next case study clicked), reset scroll to top
   useEffect(() => {
@@ -69,7 +78,7 @@ export function CaseStudyPopup({
     if (!open) return;
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") { gtagEvent("case_study_close", { case_study: data.brand }); onClose(); }
     };
     window.addEventListener("keydown", onKey);
     return () => {
@@ -120,6 +129,16 @@ export function CaseStudyPopup({
   }, [phase, open]);
 
   if (!open) return null;
+
+  function handleClose() {
+    gtagEvent("case_study_close", { case_study: data.brand });
+    onClose();
+  }
+
+  function handleNext() {
+    gtagEvent("case_study_next", { from: data.brand, to: data.next.name });
+    if (onNext) onNext();
+  }
 
   const isVideo = (src: string) => /\.(mp4|webm|mov)(\?|$)/i.test(src);
   // Unique themed gradient backgrounds per case study video container
@@ -172,13 +191,13 @@ export function CaseStudyPopup({
       <div
         className={`rcp-shell ${mounted ? "mounted" : ""} phase-${phase}`}
         onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
+          if (e.target === e.currentTarget) handleClose();
         }}
       >
         <div className="rcp-card">
           <div className="rcp-handle-bar">
             <div className="rcp-grip" />
-            <button className="rcp-close" onClick={onClose} aria-label="Close">
+            <button className="rcp-close" onClick={handleClose} aria-label="Close">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
               </svg>
@@ -235,7 +254,7 @@ export function CaseStudyPopup({
                                     <figure className="rcp-media is-video">
                                       <MediaEl src={m.src} poster={m.poster} />
                                     </figure>
-                                    <button className="rcp-close-on-video" onClick={onClose} aria-label="Close">
+                                    <button className="rcp-close-on-video" onClick={handleClose} aria-label="Close">
                                       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8">
                                         <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
                                       </svg>
@@ -391,7 +410,7 @@ export function CaseStudyPopup({
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (onNext) onNext();
+                    handleNext();
                   }}
                 >
                   <img src={data.next.image} alt={data.next.name} loading="lazy" />
