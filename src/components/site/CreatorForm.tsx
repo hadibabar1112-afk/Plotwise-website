@@ -447,6 +447,7 @@ export function CreatorForm() {
   // ── Proceed: advance or submit — ALL navigation goes through here ──────────
   // This is the single source of truth. No path bypasses the API on last step.
   function proceed(overrideAnswers?: Record<string, string | string[]>) {
+    if (autoAdvanceTimer.current) { clearTimeout(autoAdvanceTimer.current); autoAdvanceTimer.current = null; }
     const a = overrideAnswers ?? answers;
     setFieldErr(null);
     if (step < TOTAL - 1) {
