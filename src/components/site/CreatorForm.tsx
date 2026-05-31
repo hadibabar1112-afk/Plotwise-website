@@ -277,6 +277,8 @@ export function CreatorForm() {
 
   // Submission
   const [sending,    setSending]    = useState(false);
+  const submittedRef     = useRef(false);
+  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [submitErr,  setSubmitErr]  = useState<string | null>(null);
 
   // Per-step inline error
@@ -388,6 +390,8 @@ export function CreatorForm() {
 
   // ── Submit to API ──────────────────────────────────────────────────────────
   async function submitForm(finalAnswers: Record<string, string | string[]>) {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
     setSending(true);
     setSubmitErr(null);
 
@@ -434,6 +438,7 @@ export function CreatorForm() {
       setSubmitErr(isTimeout
         ? "Request timed out — please check your connection and try again."
         : "Something went wrong. Please try again.");
+      submittedRef.current = false;
     } finally {
       setSending(false);
     }
@@ -475,8 +480,11 @@ export function CreatorForm() {
       setTimeout(() => otherRef.current?.focus(), 80);
       return;
     }
-    // Delay lets the selection highlight animate before transitioning
-    setTimeout(() => proceed(newAnswers), 320);
+    if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+    autoAdvanceTimer.current = setTimeout(() => {
+      autoAdvanceTimer.current = null;
+      proceed(newAnswers);
+    }, 320);
   }
 
   // ── Multi-select toggle ────────────────────────────────────────────────────
