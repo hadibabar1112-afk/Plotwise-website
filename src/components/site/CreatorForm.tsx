@@ -975,7 +975,7 @@ export function CreatorForm() {
                 <div className="pl-10 flex flex-col gap-3">
                   <div className="flex items-center gap-3">
                     {step > 0 && (
-                      <button type="button" onClick={() => { setDir(-1); setStep(s => s - 1); setFieldErr(null); }} disabled={sending}
+                      <button type="button" onClick={() => { if (autoAdvanceTimer.current) { clearTimeout(autoAdvanceTimer.current); autoAdvanceTimer.current = null; } setDir(-1); setStep(s => s - 1); setFieldErr(null); }} disabled={sending}
                         className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-colors"
                         style={{ color: C.muted, background: "transparent", border: "none", cursor: sending ? "not-allowed" : "pointer" }}
                         onMouseEnter={e => { if (!sending) e.currentTarget.style.color = C.text; }}
@@ -1010,7 +1010,7 @@ export function CreatorForm() {
               {/* Back button for select steps (when OK is hidden) */}
               {!showOK && step > 0 && (
                 <div className="pl-10">
-                  <button type="button" onClick={() => { setDir(-1); setStep(s => s - 1); setFieldErr(null); }}
+                  <button type="button" onClick={() => { if (autoAdvanceTimer.current) { clearTimeout(autoAdvanceTimer.current); autoAdvanceTimer.current = null; } setDir(-1); setStep(s => s - 1); setFieldErr(null); }}
                     className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-colors"
                     style={{ color: C.muted, background: "transparent", border: "none" }}
                     onMouseEnter={e => (e.currentTarget.style.color = C.text)}
