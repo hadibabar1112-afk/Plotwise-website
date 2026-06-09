@@ -4,6 +4,7 @@ import { Hero } from "@/components/site/Hero";
 import { WhyItWorks } from "@/components/site/WhyItWorks";
 import { HowItWorks } from "@/components/site/HowItWorks";
 import { DualHook } from "@/components/site/DualHook";
+import { SolutionsSection } from "@/components/site/SolutionsSection";
 import { MidCTA } from "@/components/site/MidCTA";
 import {
   Problem,
@@ -29,6 +30,7 @@ function Index() {
         <UgcAnswer />
         <HowItWorks />
         <DualHook />
+        <SolutionsSection />
         <Work />
         <Creators />
         <WhyItWorks />

@@ -9,10 +9,34 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SolutionsRouteImport } from './routes/solutions'
+import { Route as ManagedRouteImport } from './routes/managed'
+import { Route as EnterpriseRouteImport } from './routes/enterprise'
 import { Route as CreatorsRouteImport } from './routes/creators'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as ChallengeRouteImport } from './routes/challenge'
+import { Route as BrandRouteImport } from './routes/brand'
+import { Route as ApplyRouteImport } from './routes/apply'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SolutionsManagedRouteImport } from './routes/solutions/managed'
+import { Route as SolutionsEnterpriseRouteImport } from './routes/solutions/enterprise'
+import { Route as SolutionsChallengeRouteImport } from './routes/solutions/challenge'
 
+const SolutionsRoute = SolutionsRouteImport.update({
+  id: '/solutions',
+  path: '/solutions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManagedRoute = ManagedRouteImport.update({
+  id: '/managed',
+  path: '/managed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EnterpriseRoute = EnterpriseRouteImport.update({
+  id: '/enterprise',
+  path: '/enterprise',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CreatorsRoute = CreatorsRouteImport.update({
   id: '/creators',
   path: '/creators',
@@ -23,44 +47,165 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChallengeRoute = ChallengeRouteImport.update({
+  id: '/challenge',
+  path: '/challenge',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BrandRoute = BrandRouteImport.update({
+  id: '/brand',
+  path: '/brand',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApplyRoute = ApplyRouteImport.update({
+  id: '/apply',
+  path: '/apply',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SolutionsManagedRoute = SolutionsManagedRouteImport.update({
+  id: '/managed',
+  path: '/managed',
+  getParentRoute: () => SolutionsRoute,
+} as any)
+const SolutionsEnterpriseRoute = SolutionsEnterpriseRouteImport.update({
+  id: '/enterprise',
+  path: '/enterprise',
+  getParentRoute: () => SolutionsRoute,
+} as any)
+const SolutionsChallengeRoute = SolutionsChallengeRouteImport.update({
+  id: '/challenge',
+  path: '/challenge',
+  getParentRoute: () => SolutionsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/apply': typeof ApplyRoute
+  '/brand': typeof BrandRoute
+  '/challenge': typeof ChallengeRoute
   '/contact': typeof ContactRoute
   '/creators': typeof CreatorsRoute
+  '/enterprise': typeof EnterpriseRoute
+  '/managed': typeof ManagedRoute
+  '/solutions': typeof SolutionsRouteWithChildren
+  '/solutions/challenge': typeof SolutionsChallengeRoute
+  '/solutions/enterprise': typeof SolutionsEnterpriseRoute
+  '/solutions/managed': typeof SolutionsManagedRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/apply': typeof ApplyRoute
+  '/brand': typeof BrandRoute
+  '/challenge': typeof ChallengeRoute
   '/contact': typeof ContactRoute
   '/creators': typeof CreatorsRoute
+  '/enterprise': typeof EnterpriseRoute
+  '/managed': typeof ManagedRoute
+  '/solutions': typeof SolutionsRouteWithChildren
+  '/solutions/challenge': typeof SolutionsChallengeRoute
+  '/solutions/enterprise': typeof SolutionsEnterpriseRoute
+  '/solutions/managed': typeof SolutionsManagedRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/apply': typeof ApplyRoute
+  '/brand': typeof BrandRoute
+  '/challenge': typeof ChallengeRoute
   '/contact': typeof ContactRoute
   '/creators': typeof CreatorsRoute
+  '/enterprise': typeof EnterpriseRoute
+  '/managed': typeof ManagedRoute
+  '/solutions': typeof SolutionsRouteWithChildren
+  '/solutions/challenge': typeof SolutionsChallengeRoute
+  '/solutions/enterprise': typeof SolutionsEnterpriseRoute
+  '/solutions/managed': typeof SolutionsManagedRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/contact' | '/creators'
+  fullPaths:
+    | '/'
+    | '/apply'
+    | '/brand'
+    | '/challenge'
+    | '/contact'
+    | '/creators'
+    | '/enterprise'
+    | '/managed'
+    | '/solutions'
+    | '/solutions/challenge'
+    | '/solutions/enterprise'
+    | '/solutions/managed'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/contact' | '/creators'
-  id: '__root__' | '/' | '/contact' | '/creators'
+  to:
+    | '/'
+    | '/apply'
+    | '/brand'
+    | '/challenge'
+    | '/contact'
+    | '/creators'
+    | '/enterprise'
+    | '/managed'
+    | '/solutions'
+    | '/solutions/challenge'
+    | '/solutions/enterprise'
+    | '/solutions/managed'
+  id:
+    | '__root__'
+    | '/'
+    | '/apply'
+    | '/brand'
+    | '/challenge'
+    | '/contact'
+    | '/creators'
+    | '/enterprise'
+    | '/managed'
+    | '/solutions'
+    | '/solutions/challenge'
+    | '/solutions/enterprise'
+    | '/solutions/managed'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApplyRoute: typeof ApplyRoute
+  BrandRoute: typeof BrandRoute
+  ChallengeRoute: typeof ChallengeRoute
   ContactRoute: typeof ContactRoute
   CreatorsRoute: typeof CreatorsRoute
+  EnterpriseRoute: typeof EnterpriseRoute
+  ManagedRoute: typeof ManagedRoute
+  SolutionsRoute: typeof SolutionsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/solutions': {
+      id: '/solutions'
+      path: '/solutions'
+      fullPath: '/solutions'
+      preLoaderRoute: typeof SolutionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/managed': {
+      id: '/managed'
+      path: '/managed'
+      fullPath: '/managed'
+      preLoaderRoute: typeof ManagedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/enterprise': {
+      id: '/enterprise'
+      path: '/enterprise'
+      fullPath: '/enterprise'
+      preLoaderRoute: typeof EnterpriseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/creators': {
       id: '/creators'
       path: '/creators'
@@ -75,6 +220,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/challenge': {
+      id: '/challenge'
+      path: '/challenge'
+      fullPath: '/challenge'
+      preLoaderRoute: typeof ChallengeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brand': {
+      id: '/brand'
+      path: '/brand'
+      fullPath: '/brand'
+      preLoaderRoute: typeof BrandRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/apply': {
+      id: '/apply'
+      path: '/apply'
+      fullPath: '/apply'
+      preLoaderRoute: typeof ApplyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -82,13 +248,56 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/solutions/managed': {
+      id: '/solutions/managed'
+      path: '/managed'
+      fullPath: '/solutions/managed'
+      preLoaderRoute: typeof SolutionsManagedRouteImport
+      parentRoute: typeof SolutionsRoute
+    }
+    '/solutions/enterprise': {
+      id: '/solutions/enterprise'
+      path: '/enterprise'
+      fullPath: '/solutions/enterprise'
+      preLoaderRoute: typeof SolutionsEnterpriseRouteImport
+      parentRoute: typeof SolutionsRoute
+    }
+    '/solutions/challenge': {
+      id: '/solutions/challenge'
+      path: '/challenge'
+      fullPath: '/solutions/challenge'
+      preLoaderRoute: typeof SolutionsChallengeRouteImport
+      parentRoute: typeof SolutionsRoute
+    }
   }
 }
 
+interface SolutionsRouteChildren {
+  SolutionsChallengeRoute: typeof SolutionsChallengeRoute
+  SolutionsEnterpriseRoute: typeof SolutionsEnterpriseRoute
+  SolutionsManagedRoute: typeof SolutionsManagedRoute
+}
+
+const SolutionsRouteChildren: SolutionsRouteChildren = {
+  SolutionsChallengeRoute: SolutionsChallengeRoute,
+  SolutionsEnterpriseRoute: SolutionsEnterpriseRoute,
+  SolutionsManagedRoute: SolutionsManagedRoute,
+}
+
+const SolutionsRouteWithChildren = SolutionsRoute._addFileChildren(
+  SolutionsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApplyRoute: ApplyRoute,
+  BrandRoute: BrandRoute,
+  ChallengeRoute: ChallengeRoute,
   ContactRoute: ContactRoute,
   CreatorsRoute: CreatorsRoute,
+  EnterpriseRoute: EnterpriseRoute,
+  ManagedRoute: ManagedRoute,
+  SolutionsRoute: SolutionsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

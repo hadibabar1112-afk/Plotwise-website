@@ -1,0 +1,158 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { Resend } from "resend";
+
+const LABELS: Record<string, string> = {
+  companyName:    "Company Name",
+  yourName:       "Contact Name",
+  role:           "Role / Title",
+  websiteUrl:     "Website URL",
+  brands:         "Brands / Product Lines",
+  engagementType: "Engagement Type",
+  creatorCount:   "Creators per Month",
+  markets:        "Target Markets",
+  timeline:       "Start Timeline",
+  notes:          "Additional Notes",
+  email:          "Work Email",
+};
+
+function formatAnswer(
+  id: string,
+  value: string | string[],
+  otherText: Record<string, string>
+): string {
+  if (!value || (Array.isArray(value) && value.length === 0)) return "—";
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => (v === "Other" && otherText[id] ? `Other: ${otherText[id]}` : v))
+      .join(", ");
+  }
+  if (value === "Other" && otherText[id]) return `Other: ${otherText[id]}`;
+  return value;
+}
+
+function buildEmailHtml(
+  answers: Record<string, string | string[]>,
+  otherText: Record<string, string>
+): string {
+  const companyName    = (answers.companyName as string) || "Unknown Company";
+  const submitterName  = (answers.yourName as string) || "";
+  const rawReplyEmail  = (answers.email as string) || "";
+  const replyEmail     = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawReplyEmail) ? rawReplyEmail : "";
+
+  const rows = Object.entries(LABELS)
+    .map(([id, label]) => {
+      const raw = answers[id];
+      if (!raw || (Array.isArray(raw) && raw.length === 0)) return null;
+      const value = formatAnswer(id, raw, otherText);
+      return `
+        <tr>
+          <td style="padding:12px 16px;border-bottom:1px solid #e8efed;color:#6b7b78;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;width:38%;vertical-align:top;white-space:nowrap;">
+            ${label}
+          </td>
+          <td style="padding:12px 16px;border-bottom:1px solid #e8efed;color:#131818;font-size:14px;vertical-align:top;">
+            ${value.replace(/\n/g, "<br>")}
+          </td>
+        </tr>`;
+    })
+    .filter(Boolean)
+    .join("");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Enterprise Application</title>
+</head>
+<body style="margin:0;padding:0;background:#f0f5f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f5f4;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#0F4F4A 0%,#207770 55%,#2C8A82 100%);border-radius:16px 16px 0 0;padding:36px 40px 32px;">
+              <div style="font-family:Georgia,serif;font-size:26px;font-weight:400;color:#ffffff;letter-spacing:-0.02em;margin-bottom:4px;">
+                Plotwise
+              </div>
+              <div style="font-size:13px;color:rgba(255,255,255,0.65);letter-spacing:0.05em;text-transform:uppercase;">
+                Enterprise Application
+              </div>
+              <div style="margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.15);">
+                <div style="font-size:22px;font-weight:600;color:#ffffff;letter-spacing:-0.01em;">
+                  ${companyName}
+                </div>
+                ${submitterName ? `<div style="font-size:14px;color:rgba(255,255,255,0.7);margin-top:4px;">Submitted by ${submitterName}${replyEmail ? ` · ${replyEmail}` : ""}</div>` : ""}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;border-radius:0 0 16px 16px;overflow:hidden;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                ${rows}
+              </table>
+              <div style="padding:24px 40px;background:#f8fbfa;border-top:1px solid #e8efed;">
+                <p style="margin:0;font-size:12px;color:#9aafac;text-align:center;">
+                  Enterprise form · ${new Date().toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" })}
+                </p>
+                ${replyEmail ? `<p style="margin:8px 0 0;font-size:12px;color:#9aafac;text-align:center;">Reply directly to reach ${submitterName || "the sender"}</p>` : ""}
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+const SHEET_WEBHOOK = process.env.ENTERPRISE_SHEET_WEBHOOK ?? process.env.CONTACT_SHEET_WEBHOOK ?? "";
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const { answers, otherText } = req.body as {
+    answers: Record<string, string | string[]>;
+    otherText: Record<string, string>;
+  };
+
+  if (!answers) return res.status(400).json({ error: "Missing answers" });
+
+  const companyName = (answers.companyName as string) || "Unknown Company";
+  const rawEmail    = (answers.email as string) || "";
+  const replyEmail  = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) ? rawEmail : undefined;
+
+  if (SHEET_WEBHOOK) {
+    try {
+      const sheetRes = await fetch(SHEET_WEBHOOK, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ form: "enterprise", answers, otherText: otherText ?? {} }),
+      });
+      const sheetData = await sheetRes.json();
+      console.log("Enterprise sheet result:", JSON.stringify(sheetData));
+    } catch (err) {
+      console.error("Enterprise sheet error (non-fatal):", err);
+    }
+  }
+
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const result = await resend.emails.send({
+        from:    "Plotwise <noreply@theplotwise.com>",
+        to:      "raamish@theplotwise.com",
+        replyTo: replyEmail,
+        subject: `Enterprise Application — ${companyName}`,
+        html:    buildEmailHtml(answers, otherText ?? {}),
+      });
+      console.log("Resend result:", JSON.stringify(result));
+    } catch (err) {
+      console.error("Resend error (non-fatal):", err);
+    }
+  }
+
+  return res.status(200).json({ success: true });
+}

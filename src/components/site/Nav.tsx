@@ -7,7 +7,7 @@ const links = [
   { label: "Our Work", href: "#work" },
   { label: "Creators", href: "#creators" },
   { label: "FAQ", href: "#faq" },
-  { label: "Contact Us", href: "/contact", newTab: true },
+  { label: "Contact Us", href: "/apply", newTab: true },
 ];
 
 export function Nav() {
@@ -50,7 +50,7 @@ export function Nav() {
 
         <div className="flex items-center gap-3">
           <a
-            href="/contact"
+            href="/apply"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden sm:inline-flex items-center gap-2 rounded-full bg-foreground text-background px-4 h-10 text-[13px] font-medium hover:bg-brand-dark transition-colors"
@@ -89,7 +89,7 @@ export function Nav() {
             </a>
           ))}
           <a
-            href="/contact"
+            href="/apply"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setOpen(false)}

@@ -1,10 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ContactForm } from "@/components/site/ContactForm";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/contact")({
-  component: ContactPage,
+  beforeLoad: () => {
+    throw redirect({ to: "/apply" });
+  },
+  component: () => null,
 });
-
-function ContactPage() {
-  return <ContactForm />;
-}

@@ -254,7 +254,7 @@ function gtagEvent(name: string, params?: Record<string, string | number>) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export function CreatorForm() {
-  const [screen,  setScreen]  = useState<"welcome" | "form" | "success">("welcome");
+  const [screen,  setScreen]  = useState<"welcome" | "form" | "success">("form");
   const [step,    setStep]    = useState(0);
   const [dir,     setDir]     = useState(1);
 
@@ -310,6 +310,9 @@ export function CreatorForm() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Fire form start event once on mount
+  useEffect(() => { gtagEvent("creator_form_start"); }, []);
 
   // Focus input when step changes
   useEffect(() => {
@@ -415,6 +418,16 @@ export function CreatorForm() {
       answers: { ...finalAnswers, profileLink, phone },
       otherText,
     };
+
+    // In local Vite dev the /api/* serverless functions don't run — skip the
+    // network call so the success screen is reachable during development.
+    if (import.meta.env.DEV) {
+      await new Promise(r => setTimeout(r, 600));
+      gtagEvent("creator_form_submit");
+      setSending(false);
+      setScreen("success");
+      return;
+    }
 
     try {
       const controller = new AbortController();
@@ -974,7 +987,17 @@ export function CreatorForm() {
               {showOK && (
                 <div className="pl-10 flex flex-col gap-3">
                   <div className="flex items-center gap-3">
-                    {step > 0 && (
+                    {step === 0 ? (
+                      <a
+                        href="/apply"
+                        className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-colors no-underline"
+                        style={{ color: C.muted }}
+                        onMouseEnter={e => (e.currentTarget.style.color = C.text)}
+                        onMouseLeave={e => (e.currentTarget.style.color = C.muted)}
+                      >
+                        <ArrowLeft size={14} /> Back
+                      </a>
+                    ) : (
                       <button type="button" onClick={() => { if (autoAdvanceTimer.current) { clearTimeout(autoAdvanceTimer.current); autoAdvanceTimer.current = null; } setDir(-1); setStep(s => s - 1); setFieldErr(null); }} disabled={sending}
                         className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-colors"
                         style={{ color: C.muted, background: "transparent", border: "none", cursor: sending ? "not-allowed" : "pointer" }}
@@ -1008,15 +1031,27 @@ export function CreatorForm() {
               )}
 
               {/* Back button for select steps (when OK is hidden) */}
-              {!showOK && step > 0 && (
+              {!showOK && (
                 <div className="pl-10">
-                  <button type="button" onClick={() => { if (autoAdvanceTimer.current) { clearTimeout(autoAdvanceTimer.current); autoAdvanceTimer.current = null; } setDir(-1); setStep(s => s - 1); setFieldErr(null); }}
-                    className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-colors"
-                    style={{ color: C.muted, background: "transparent", border: "none" }}
-                    onMouseEnter={e => (e.currentTarget.style.color = C.text)}
-                    onMouseLeave={e => (e.currentTarget.style.color = C.muted)}>
-                    <ArrowLeft size={14} /> Back
-                  </button>
+                  {step === 0 ? (
+                    <a
+                      href="/apply"
+                      className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-colors no-underline"
+                      style={{ color: C.muted }}
+                      onMouseEnter={e => (e.currentTarget.style.color = C.text)}
+                      onMouseLeave={e => (e.currentTarget.style.color = C.muted)}
+                    >
+                      <ArrowLeft size={14} /> Back
+                    </a>
+                  ) : (
+                    <button type="button" onClick={() => { if (autoAdvanceTimer.current) { clearTimeout(autoAdvanceTimer.current); autoAdvanceTimer.current = null; } setDir(-1); setStep(s => s - 1); setFieldErr(null); }}
+                      className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-colors"
+                      style={{ color: C.muted, background: "transparent", border: "none" }}
+                      onMouseEnter={e => (e.currentTarget.style.color = C.text)}
+                      onMouseLeave={e => (e.currentTarget.style.color = C.muted)}>
+                      <ArrowLeft size={14} /> Back
+                    </button>
+                  )}
                 </div>
               )}
 

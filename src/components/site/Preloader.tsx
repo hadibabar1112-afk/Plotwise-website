@@ -38,10 +38,14 @@ function buildWavePath(fillY: number, offset: number): string {
 }
 
 export function Preloader() {
-  const [fillY, setFillY] = useState(VH);
+  // Only show on the homepage — form / apply routes should load instantly
+  const isHome =
+    typeof window !== "undefined" && window.location.pathname === "/";
+
+  const [fillY, setFillY] = useState(isHome ? VH : 0);
   const [waveOff, setWaveOff] = useState(0);
-  const [exiting, setExiting] = useState(false);
-  const [gone, setGone] = useState(false);
+  const [exiting, setExiting] = useState(!isHome);
+  const [gone, setGone] = useState(!isHome);
 
   const startTs = useRef<number | null>(null);
   const raf = useRef<number | null>(null);
@@ -61,9 +65,9 @@ export function Preloader() {
     }
   }, []);
 
-  // Kick off hero asset preloading immediately so resources are warm by the time
-  // the loader dismisses and the hero section becomes visible.
+  // Kick off hero asset preloading only on the homepage.
   useEffect(() => {
+    if (!isHome) return;
     HERO_POSTERS.forEach((src) => {
       const img = new Image();
       img.src = src;
@@ -92,6 +96,7 @@ export function Preloader() {
   }, []);
 
   useEffect(() => {
+    if (!isHome) return;
     function tick(ts: number) {
       if (!startTs.current) startTs.current = ts;
       const t = Math.min((ts - startTs.current) / duration.current, 1);
@@ -109,7 +114,7 @@ export function Preloader() {
     return () => {
       if (raf.current) cancelAnimationFrame(raf.current);
     };
-  }, []);
+  }, [isHome]);
 
   if (gone) return null;
 

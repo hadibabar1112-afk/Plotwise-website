@@ -150,7 +150,7 @@ export function Work() {
           </h2>
           <div className="mt-7 hidden lg:flex justify-center">
             <a
-              href="/contact"
+              href="/apply"
               target="_blank"
               rel="noopener noreferrer"
               className="group inline-flex items-center gap-2 rounded-full bg-brand-deep text-background pl-6 pr-2 h-[52px] text-[14px] font-medium shadow-[0_12px_28px_-12px_rgba(15,79,74,0.5)] transition-all hover:bg-brand-dark hover:-translate-y-0.5"
@@ -176,7 +176,7 @@ export function Work() {
 
         <div className="mt-8 flex lg:hidden justify-center">
           <a
-            href="/contact"
+            href="/apply"
             target="_blank"
             rel="noopener noreferrer"
             className="group inline-flex items-center gap-2 rounded-full bg-brand-deep text-background pl-6 pr-2 h-[52px] text-[14px] font-medium shadow-[0_12px_28px_-12px_rgba(15,79,74,0.5)] transition-all hover:bg-brand-dark hover:-translate-y-0.5"
@@ -401,7 +401,7 @@ export function WhoWeWorkWith() {
             ))}
           </ul>
 
-          <a href="/contact" target="_blank" rel="noopener noreferrer" className="mt-10 inline-flex items-center gap-2 rounded-full bg-foreground text-background pl-6 pr-2 h-[52px] py-2 text-[14px] font-medium hover:bg-brand-dark transition-colors group">
+          <a href="/apply" target="_blank" rel="noopener noreferrer" className="mt-10 inline-flex items-center gap-2 rounded-full bg-foreground text-background pl-6 pr-2 h-[52px] py-2 text-[14px] font-medium hover:bg-brand-dark transition-colors group">
             Apply for the next cohort
             <span className="ml-1 h-9 w-9 rounded-full bg-background text-foreground flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
               <ArrowUpRight className="h-4 w-4" />
@@ -560,7 +560,7 @@ export function Apply() {
 
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
-            href="/contact"
+            href="/apply"
             target="_blank"
             rel="noopener noreferrer"
             className="group inline-flex items-center gap-2 rounded-full bg-background text-brand-deep pl-7 pr-2 h-[54px] text-[14px] font-medium shadow-[0_16px_40px_-16px_rgba(0,0,0,0.4)] transition-all hover:bg-brand-teal hover:text-background"
@@ -602,13 +602,13 @@ export function Footer() {
             {[
               ["About", "#"],
               ["Creators", "#creators"],
-              ["Apply", "/contact"],
+              ["Apply", "/apply"],
               ["FAQ", "#faq"],
             ].map(([l, h]) => (
               <a
                 key={l}
                 href={h}
-                {...(h === "/contact" ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                {...(h === "/apply" ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className="hover:text-foreground transition-colors"
               >{l}</a>
             ))}

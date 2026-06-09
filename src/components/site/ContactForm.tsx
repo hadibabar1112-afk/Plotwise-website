@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Logo } from "./Logo";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Layers, Zap, Globe } from "lucide-react";
 
 type AnswerValue = string | string[];
 
@@ -10,7 +10,7 @@ interface StepDef {
   part: "A" | "B" | null;
   sectionLabel: string;
   id: string;
-  type: "text" | "email" | "url" | "select" | "multiselect" | "textarea" | "datepicker" | "timepicker";
+  type: "text" | "email" | "url" | "select" | "multiselect" | "campaigncard" | "textarea" | "datepicker" | "timepicker";
   question: string;
   placeholder?: string;
   hint?: string;
@@ -19,6 +19,15 @@ interface StepDef {
 }
 
 const STEPS: StepDef[] = [
+  // ── Section 0: Campaign Type ──
+  {
+    section: 0, part: null, sectionLabel: "Campaign Type",
+    id: "campaignType", type: "campaigncard",
+    question: "Which campaigns are you looking to run?",
+    hint: "Select all that apply",
+    options: ["Managed Campaigns", "Challenge Campaigns", "Enterprise Campaigns"],
+    required: true,
+  },
   // ── Section 1: Brand Basics ──
   {
     section: 1, part: null, sectionLabel: "Brand Basics",
@@ -208,7 +217,7 @@ function validateStep(
   }
 
   if (cur.required) {
-    if (cur.type === "multiselect") {
+    if (cur.type === "multiselect" || cur.type === "campaigncard") {
       const arr = (val as string[]) ?? [];
       if (!arr.length) return "Please select at least one option.";
       if (arr.includes("Other") && !(otherText[cur.id] ?? "").trim())
@@ -432,7 +441,7 @@ export function ContactForm() {
   const otherInputRef = useRef<HTMLInputElement>(null);
 
   const current = STEPS[step];
-  const answer = answers[current?.id ?? ""] ?? (current?.type === "multiselect" ? [] : "");
+  const answer = answers[current?.id ?? ""] ?? (current?.type === "multiselect" || current?.type === "campaigncard" ? [] : "");
   const progress = submitted ? 100 : (step / TOTAL) * 100;
 
   const setAns = useCallback(
@@ -526,6 +535,7 @@ export function ContactForm() {
         current.type !== "textarea" &&
         current.type !== "select" &&
         current.type !== "multiselect" &&
+        current.type !== "campaigncard" &&
         current.type !== "datepicker" &&
         current.type !== "timepicker"
       ) {
@@ -696,6 +706,88 @@ export function ContactForm() {
       );
     }
 
+    if (current.type === "campaigncard") {
+      const selected = answer as string[];
+      const CAMPAIGN_META: Record<string, { description: string; icon: ReactNode }> = {
+        "Managed Campaigns": {
+          icon: <Layers size={18} />,
+          description: "We source, brief, and manage creators for you — end-to-end content production with full performance tracking.",
+        },
+        "Challenge Campaigns": {
+          icon: <Zap size={18} />,
+          description: "Viral challenge formats designed to spark organic creator participation and drive mass reach.",
+        },
+        "Enterprise Campaigns": {
+          icon: <Globe size={18} />,
+          description: "Multi-market, high-volume campaigns with dedicated account support and custom reporting.",
+        },
+      };
+      return (
+        <div className="flex flex-col gap-3 w-full max-w-2xl">
+          {current.options?.map((opt) => {
+            const sel = selected.includes(opt);
+            const meta = CAMPAIGN_META[opt];
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => toggleMulti(opt)}
+                className="flex items-start gap-4 p-5 rounded-2xl text-left cursor-pointer"
+                style={{
+                  background: sel ? "rgba(0,98,92,0.04)" : "rgba(19,24,24,0.02)",
+                  border: `1.5px solid ${sel ? T.deep : T.border}`,
+                  boxShadow: sel ? "0 0 0 3px rgba(0,98,92,0.08)" : "none",
+                  transition: "all 0.18s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!sel) e.currentTarget.style.borderColor = T.borderHover;
+                }}
+                onMouseLeave={(e) => {
+                  if (!sel) e.currentTarget.style.borderColor = T.border;
+                }}
+              >
+                {/* Icon */}
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                  style={{
+                    background: sel ? "rgba(0,98,92,0.10)" : "rgba(19,24,24,0.05)",
+                    color: sel ? T.deep : T.textSubtle,
+                  }}
+                >
+                  {meta?.icon}
+                </div>
+                {/* Text */}
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-[15px] mb-1" style={{ color: T.text }}>
+                    {opt}
+                  </div>
+                  <div className="text-[13px] leading-[1.55]" style={{ color: T.textMuted }}>
+                    {meta?.description}
+                  </div>
+                </div>
+                {/* Checkbox */}
+                <div
+                  className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5"
+                  style={{
+                    borderColor: sel ? T.deep : T.border,
+                    background: sel ? T.deep : "transparent",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {sel && <Check size={11} strokeWidth={3} style={{ color: "#fff" }} />}
+                </div>
+              </button>
+            );
+          })}
+          {selected.length > 0 && !hasError && (
+            <p className="text-xs mt-1" style={{ color: T.textFaint }}>
+              {selected.length} selected · click OK to continue
+            </p>
+          )}
+        </div>
+      );
+    }
+
     if (current.type === "datepicker") {
       return (
         <div className="w-full max-w-xl">
@@ -847,7 +939,17 @@ export function ContactForm() {
               {(current.type !== "select" || answer === "Other") && (
                 <div className="pl-10 flex flex-col gap-3">
                   <div className="flex items-center gap-3">
-                    {step > 0 && (
+                    {step === 0 ? (
+                      <a
+                        href="/apply"
+                        className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-all duration-200 no-underline"
+                        style={{ color: T.textMuted }}
+                        onMouseEnter={e => (e.currentTarget.style.color = T.text)}
+                        onMouseLeave={e => (e.currentTarget.style.color = T.textMuted)}
+                      >
+                        <ArrowLeft size={14} /> Back
+                      </a>
+                    ) : (
                       <button onClick={goPrev} disabled={sending}
                         className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-all duration-200"
                         style={{ color: T.textMuted, background: "transparent", border: "none", cursor: sending ? "not-allowed" : "pointer" }}
@@ -897,16 +999,28 @@ export function ContactForm() {
               )}
 
               {/* Back only — for auto-advance selects */}
-              {current.type === "select" && answer !== "Other" && step > 0 && (
+              {current.type === "select" && answer !== "Other" && (
                 <div className="pl-10">
-                  <button onClick={goPrev}
-                    className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-all duration-200"
-                    style={{ color: T.textMuted, background: "transparent", border: "none", cursor: "pointer" }}
-                    onMouseEnter={e => (e.currentTarget.style.color = T.text)}
-                    onMouseLeave={e => (e.currentTarget.style.color = T.textMuted)}
-                  >
-                    <ArrowLeft size={14} /> Back
-                  </button>
+                  {step === 0 ? (
+                    <a
+                      href="/apply"
+                      className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-all duration-200 no-underline"
+                      style={{ color: T.textMuted }}
+                      onMouseEnter={e => (e.currentTarget.style.color = T.text)}
+                      onMouseLeave={e => (e.currentTarget.style.color = T.textMuted)}
+                    >
+                      <ArrowLeft size={14} /> Back
+                    </a>
+                  ) : (
+                    <button onClick={goPrev}
+                      className="flex items-center gap-1.5 px-3 h-11 text-sm font-medium transition-all duration-200"
+                      style={{ color: T.textMuted, background: "transparent", border: "none", cursor: "pointer" }}
+                      onMouseEnter={e => (e.currentTarget.style.color = T.text)}
+                      onMouseLeave={e => (e.currentTarget.style.color = T.textMuted)}
+                    >
+                      <ArrowLeft size={14} /> Back
+                    </button>
+                  )}
                 </div>
               )}
             </motion.div>
