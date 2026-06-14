@@ -543,6 +543,7 @@ const INCLUDED = [
 function NetworkCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
+  const mouseRef = useRef({ x: -9999, y: -9999 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -564,26 +565,67 @@ function NetworkCanvas() {
     };
 
     const N = 68;
-    const nodes = Array.from({ length: N }, () => ({
-      x: (0.06 + rng() * 0.88) * W,
-      y: (0.06 + rng() * 0.88) * H,
-      r: (1.5 + rng() * 1.6) * dpr,
-      vx: (rng() - 0.5) * 0.22 * dpr,
-      vy: (rng() - 0.5) * 0.22 * dpr,
-      phase: rng() * Math.PI * 2,
-    }));
+    const nodes = Array.from({ length: N }, () => {
+      const hx = (0.06 + rng() * 0.88) * W;
+      const hy = (0.06 + rng() * 0.88) * H;
+      return {
+        x: hx, y: hy,
+        hx, hy,                         // home position
+        r: (1.5 + rng() * 1.6) * dpr,
+        vx: 0, vy: 0,
+        phase: rng() * Math.PI * 2,
+        driftX: (rng() - 0.5) * 44 * dpr, // float amplitude
+        driftY: (rng() - 0.5) * 44 * dpr,
+        driftSpeed: 0.32 + rng() * 0.38,
+      };
+    });
+
+    const onMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseRef.current = {
+        x: (e.clientX - rect.left) * dpr,
+        y: (e.clientY - rect.top) * dpr,
+      };
+    };
+    const onMouseLeave = () => { mouseRef.current = { x: -9999, y: -9999 }; };
+    canvas.addEventListener("mousemove", onMouseMove);
+    canvas.addEventListener("mouseleave", onMouseLeave);
 
     let t = 0;
     const THRESH = 86 * dpr;
+    const MOUSE_R = 110 * dpr;
 
     const draw = () => {
       t += 0.011;
       ctx.clearRect(0, 0, W, H);
 
+      const { x: mx, y: my } = mouseRef.current;
+
       nodes.forEach(n => {
-        n.x += n.vx; n.y += n.vy;
-        if (n.x < 0.04 * W || n.x > 0.96 * W) n.vx *= -1;
-        if (n.y < 0.04 * H || n.y > 0.96 * H) n.vy *= -1;
+        // Slow sinusoidal float around home — gives spread, organic motion
+        const targetX = n.hx + n.driftX * Math.sin(t * n.driftSpeed + n.phase);
+        const targetY = n.hy + n.driftY * Math.cos(t * n.driftSpeed + n.phase + 1.2);
+
+        // Spring toward float target (home + drift offset)
+        n.vx += (targetX - n.x) * 0.012;
+        n.vy += (targetY - n.y) * 0.012;
+
+        // Mouse repulsion
+        const dx = n.x - mx;
+        const dy = n.y - my;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d > 1 && d < MOUSE_R) {
+          const f = (1 - d / MOUSE_R) * 0.08;
+          n.vx += (dx / d) * f;
+          n.vy += (dy / d) * f;
+        }
+
+        // Dampen
+        n.vx *= 0.86;
+        n.vy *= 0.86;
+
+        n.x += n.vx;
+        n.y += n.vy;
       });
 
       const reveal = Math.min(t / 1.4, 1);
@@ -613,7 +655,6 @@ function NetworkCanvas() {
         if (i / N > reveal) return;
         const pulse = 0.5 + 0.5 * Math.sin(t * 1.5 + n.phase);
         const alpha = Math.min((reveal - i / N) * N, 1);
-        // Dot
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.r * (1 + pulse * 0.3), 0, Math.PI * 2);
         ctx.fillStyle = `rgba(32,119,112,${0.82 * alpha})`;
@@ -637,10 +678,12 @@ function NetworkCanvas() {
     rafRef.current = requestAnimationFrame(draw);
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      canvas.removeEventListener("mousemove", onMouseMove);
+      canvas.removeEventListener("mouseleave", onMouseLeave);
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="w-full h-full block" />;
+  return <canvas ref={canvasRef} className="w-full h-full block cursor-default" />;
 }
 
 // ── Page ────────────────────────────────────────────────────────────────────
@@ -685,20 +728,20 @@ export function ManagedSolutionPage() {
                 <Eyebrow className="mb-6">
                   Managed Campaigns Â· For Beauty Brands Doing 6 to 8 Figures
                 </Eyebrow>
-                <h1 className="font-display text-[44px] sm:text-[60px] lg:text-[76px] font-normal leading-[1.02] tracking-[-0.03em] text-foreground text-balance">
+                <h1 className="font-display text-[44px] sm:text-[60px] lg:text-[76px] font-normal leading-[1.02] tracking-[-0.03em] text-foreground text-balance text-center lg:text-left">
                   Your winning ad is{" "}
                   <span className="font-serif italic text-brand-deep" style={{ fontSize: "1.02em" }}>
                     already dying.
                   </span>
                 </h1>
 
-                <p className="mt-7 text-[17px] lg:text-[19px] leading-relaxed text-foreground/70 max-w-xl text-pretty">
+                <p className="mt-7 text-[17px] lg:text-[19px] leading-relaxed text-foreground/70 max-w-xl text-pretty text-center lg:text-left">
                   Beauty creative fatigues in 2 to 3 weeks. Your ad account tells you which
                   creative won. It never tells you why, or what to make next. So every time a
                   winner dies, you're back to guessing with your own money.
                 </p>
 
-                <div className="mt-8 flex flex-col items-start gap-4">
+                <div className="mt-8 flex flex-col items-center lg:items-start gap-4">
                   <a
                     href={CTA_HREF}
                     className="group inline-flex items-center gap-2 rounded-full bg-brand-deep text-background pl-7 pr-2 h-[56px] text-[14.5px] font-medium shadow-[0_16px_40px_-12px_rgba(0,98,92,0.55)] transition-all hover:bg-brand-dark hover:-translate-y-0.5 no-underline"
@@ -708,7 +751,7 @@ export function ManagedSolutionPage() {
                       <ArrowUpRight className="h-4 w-4" />
                     </span>
                   </a>
-                  <p className="text-[13px] text-foreground/45">
+                  <p className="text-[13px] text-foreground/45 text-center lg:text-left">
                     First 5 beauty brands get 5 videos produced free. No retainer, no commitment.
                   </p>
                 </div>
@@ -818,16 +861,16 @@ export function ManagedSolutionPage() {
                     ref={(el) => { stageRefs.current[i] = el; }}
                     className={`flex flex-col justify-center py-4 lg:py-9 lg:min-h-[62vh] ${i > 0 ? "border-t border-dashed border-foreground/15" : ""}`}
                   >
-                    <div className="inline-flex items-center gap-3.5 text-[11px] tracking-[0.22em] uppercase text-foreground/60 font-medium mb-4">
+                    <div className="inline-flex items-center gap-3.5 text-[11px] tracking-[0.22em] uppercase text-foreground/60 font-medium mb-4 justify-center lg:justify-start">
                       <span className={`w-[30px] h-[30px] rounded-full grid place-items-center font-serif italic text-[15px] transition-all duration-500 ${activeStage === i ? "bg-brand-deep text-white ring-[5px] ring-brand-teal/30" : "bg-white border-[1.5px] border-foreground/15 text-foreground/60"}`}>
                         {s.num}
                       </span>
                       <span className={activeStage === i ? "text-foreground" : ""}>{s.label}</span>
                     </div>
-                    <h3 className="font-display text-[26px] lg:text-[38px] leading-[1.08] tracking-[-0.025em] font-normal">
+                    <h3 className="font-display text-[26px] lg:text-[38px] leading-[1.08] tracking-[-0.025em] font-normal text-center lg:text-left">
                       {renderMFrags(s.title as readonly MFrag[])}
                     </h3>
-                    <p className="text-[13.5px] lg:text-[14.5px] leading-[1.65] text-foreground/60 max-w-[420px] mt-3">
+                    <p className="text-[13.5px] lg:text-[14.5px] leading-[1.65] text-foreground/60 max-w-[420px] mt-3 text-center lg:text-left">
                       {renderMFrags(s.lead as readonly MFrag[])}
                     </p>
                     {i === 4 && (
@@ -884,11 +927,11 @@ export function ManagedSolutionPage() {
       <section className="bg-white py-20 lg:py-28">
         <div className="mx-auto max-w-5xl px-5 lg:px-10">
           <Reveal>
-            <Eyebrow>You See The Thinking, Not Just The Deliverables</Eyebrow>
-            <h2 className="font-display text-[30px] lg:text-[44px] font-normal tracking-[-0.025em] leading-[1.12] text-foreground max-w-3xl">
+            <Eyebrow className="justify-center lg:justify-start">You See The Thinking, Not Just The Deliverables</Eyebrow>
+            <h2 className="font-display text-[30px] lg:text-[44px] font-normal tracking-[-0.025em] leading-[1.12] text-foreground max-w-3xl text-center lg:text-left">
               The reasoning behind every decision, documented inside your campaign.
             </h2>
-            <p className="mt-6 text-[15.5px] lg:text-[16.5px] leading-[1.8] text-foreground/70 max-w-2xl">
+            <p className="mt-6 text-[15.5px] lg:text-[16.5px] leading-[1.8] text-foreground/70 max-w-2xl text-center lg:text-left">
               Agencies hand you outputs. We hand you the reasoning behind them. Inside every
               campaign, each section carries the framework that produced it: how we approached
               it, which questions it answers, and how it becomes more precise as performance data
@@ -908,39 +951,42 @@ export function ManagedSolutionPage() {
       {/* ── SECTION 6 – WHY US ─────────────────────────────────────────────── */}
       <section className="bg-white py-20 lg:py-32">
         <div className="mx-auto max-w-6xl px-5 lg:px-10">
+
+          {/* Centered heading */}
+          <Reveal>
+            <div className="text-center mb-12 lg:mb-16">
+              <Eyebrow className="text-center">Why Beauty. Why Us.</Eyebrow>
+              <h2 className="font-display text-[30px] lg:text-[42px] font-normal tracking-[-0.025em] leading-[1.12] text-foreground mx-auto">
+                <span className="font-serif italic text-brand-deep whitespace-nowrap" style={{ fontSize: "1.05em" }}>We helped build a 35,000-creator network.</span><br />
+                <span className="whitespace-nowrap">Then we watched the value in advertising move to creative.</span>
+              </h2>
+            </div>
+          </Reveal>
+
+          {/* Two-column: body text left, canvas right — vertically centered */}
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
-            {/* Left: text */}
-            <div>
-              <Reveal>
-                <Eyebrow>Why Beauty. Why Us.</Eyebrow>
-                <h2 className="font-display text-[30px] lg:text-[42px] font-normal tracking-[-0.025em] leading-[1.12] text-foreground">
-                  We helped build a 35,000-creator network. Then we watched the value in advertising
-                  move to creative.
-                </h2>
-              </Reveal>
-              <Reveal delay={80}>
-                <div className="mt-8 flex flex-col gap-5 text-[15.5px] lg:text-[16.5px] leading-[1.8] text-foreground/70">
-                  <p>
-                    Before Plotwise, our team worked at the core of the creator economy, helping a
-                    media company scale its network past 35,000 content creators and managing those
-                    creator relationships day to day. That experience gave us two things: a deep
-                    understanding of what makes creator content perform, and a front-row view of
-                    advertising's biggest shift, where creative has become the single most valuable
-                    lever in the stack.
-                  </p>
-                  <p>
-                    Plotwise is where we put that understanding to work. And we only work in beauty:
-                    skincare, haircare, fragrance, body care, wellness. Deep, not wide. Because what
-                    makes a buyer stop scrolling for a serum transfers to a hair oil. It does not
-                    transfer from a phone case.
-                  </p>
-                </div>
-              </Reveal>
-            </div>
+            <Reveal delay={80}>
+              <div className="flex flex-col gap-5 text-[15.5px] lg:text-[16.5px] leading-[1.8] text-foreground/70 text-center lg:text-left">
+                <p>
+                  Before Plotwise, our team worked at the core of the creator economy, helping a
+                  media company scale its network past 35,000 content creators and managing those
+                  creator relationships day to day. That experience gave us two things: a deep
+                  understanding of what makes creator content perform, and a front-row view of
+                  advertising's biggest shift, where creative has become the single most valuable
+                  lever in the stack.
+                </p>
+                <p>
+                  Plotwise is where we put that understanding to work. And we only work in beauty:
+                  skincare, haircare, fragrance, body care, wellness. Deep, not wide. Because what
+                  makes a buyer stop scrolling for a serum transfers to a hair oil. It does not
+                  transfer from a phone case.
+                </p>
+              </div>
+            </Reveal>
 
-            {/* Right: creator network animation */}
-            <div className="relative h-[380px] lg:h-[480px] overflow-hidden bg-white">
+            {/* Right: creator network animation — no background, no border */}
+            <div className="relative h-[380px] lg:h-[480px] overflow-hidden">
               <NetworkCanvas />
             </div>
 
@@ -960,25 +1006,26 @@ export function ManagedSolutionPage() {
               <p className="text-[11px] font-bold tracking-[0.22em] uppercase text-brand-teal mb-5">
                 The First 5 Brands
               </p>
-              <h2 className="font-display text-[34px] sm:text-[46px] lg:text-[58px] font-normal leading-[1.06] tracking-[-0.03em] max-w-4xl mx-auto text-balance">
-                5 videos. Fully produced. Free. For the first 5 beauty brands that claim a spot.
+              <h2 className="font-display text-[34px] sm:text-[46px] lg:text-[58px] font-normal leading-[1.06] tracking-[-0.03em] max-w-4xl mx-auto">
+                <span className="font-serif italic text-white" style={{ fontSize: "1.05em" }}>5 videos. Fully produced. Free.</span><br />
+                <span className="whitespace-nowrap">For the first 5 beauty brands that claim a spot.</span>
               </h2>
             </div>
           </Reveal>
 
           {/* 2-col: left = text + CTA, right = card */}
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
             {/* Left: description + CTA */}
             <Reveal delay={80}>
-              <p className="text-[16px] leading-[1.75] text-background/75">
+              <p className="text-[16px] leading-[1.75] text-background/75 text-center lg:text-left">
                 We're selective about who we take on, and we'd rather prove the system than pitch
                 it. So for the first 5 brands that claim a spot, we'll run the full engine free:
                 research, angles, creator casting, and 5 produced videos, ready to run. No
                 retainer. No contract. If the work doesn't speak for itself, walk away and keep
                 the videos.
               </p>
-              <div className="mt-10 flex flex-col items-start gap-4">
+              <div className="mt-10 flex flex-col items-center lg:items-start gap-4">
                 <div className="inline-flex items-center gap-2 rounded-full border border-background/20 bg-background/[0.08] px-4 py-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-brand-teal animate-pulse" />
                   <span className="text-[12px] font-medium tracking-wide text-background/80">
@@ -1027,8 +1074,8 @@ export function ManagedSolutionPage() {
       <section className="bg-white py-20 lg:py-28">
         <div className="mx-auto max-w-3xl px-5 lg:px-10">
           <Reveal>
-            <Eyebrow>Before You Talk Yourself Out Of It</Eyebrow>
-            <h2 className="font-display text-[30px] lg:text-[42px] font-normal tracking-[-0.025em] leading-[1.12] text-foreground mb-10">
+            <Eyebrow className="justify-center lg:justify-start">Before You Talk Yourself Out Of It</Eyebrow>
+            <h2 className="font-display text-[30px] lg:text-[42px] font-normal tracking-[-0.025em] leading-[1.12] text-foreground mb-10 text-center lg:text-left">
               The four things every founder asks.
             </h2>
           </Reveal>
@@ -1036,7 +1083,7 @@ export function ManagedSolutionPage() {
             <FaqAccordion />
           </Reveal>
           <Reveal delay={120}>
-            <div className="mt-10 flex flex-col items-start gap-3">
+            <div className="mt-10 flex flex-col items-center lg:items-start gap-3">
               <a
                 href={CTA_HREF}
                 className="group inline-flex items-center gap-2 rounded-full bg-brand-deep text-background pl-7 pr-2 h-[54px] text-[14px] font-medium shadow-[0_12px_32px_-12px_rgba(0,98,92,0.50)] transition-all hover:bg-brand-dark hover:-translate-y-0.5 no-underline"
@@ -1046,7 +1093,7 @@ export function ManagedSolutionPage() {
                   <ArrowUpRight className="h-4 w-4" />
                 </span>
               </a>
-              <p className="text-[13px] text-foreground/45">
+              <p className="text-[13px] text-foreground/45 text-center lg:text-left">
                 Takes under 3 minutes. The call is where we map your first campaign.
               </p>
             </div>
