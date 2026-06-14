@@ -33,6 +33,7 @@ const CARDS: {
   accent: string;
   accentBg: string;
   delay: number;
+  href?: string;
 }[] = [
   {
     id: "managed",
@@ -46,6 +47,7 @@ const CARDS: {
     accent: "var(--brand-deep)",
     accentBg: "rgba(0,98,92,0.07)",
     delay: 0,
+    href: "/solutions/managed",
   },
   {
     id: "challenge",
@@ -87,17 +89,17 @@ export function SolutionsSection() {
         <div className="relative mx-auto max-w-7xl px-5 lg:px-10">
           {/* Header */}
           <Reveal>
-            <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-foreground/40 mb-5">
-              Our Solutions
-            </div>
-            <div className="max-w-4xl">
+            <div className="text-center">
+              <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-foreground/40 mb-5">
+                Our Solutions
+              </div>
               <h2 className="font-display text-[38px] sm:text-[48px] lg:text-[56px] font-normal leading-[1.05] tracking-[-0.03em] text-foreground">
                 Three ways to work{" "}
                 <span className="font-serif italic text-brand-deep" style={{ fontSize: "1.05em" }}>
                   with Plotwise.
                 </span>
               </h2>
-              <p className="mt-5 text-[16px] lg:text-[17px] leading-[1.7] text-foreground/60 max-w-[600px]">
+              <p className="mt-5 text-[16px] lg:text-[17px] leading-[1.7] text-foreground/60 max-w-[1020px] mx-auto">
                 Every brand is at a different stage. Whether you want us to run everything, access our creator network directly, or scale creator-led growth at enterprise level — Plotwise has a solution built for you.
               </p>
             </div>
@@ -107,62 +109,71 @@ export function SolutionsSection() {
           <div className="mt-14 lg:mt-18 grid grid-cols-1 md:grid-cols-3 gap-5">
             {CARDS.map((card) => {
               const Icon = card.icon;
-              return (
-                <Reveal key={card.id} delay={card.delay}>
-                  <button
-                    onClick={() => setOpenId(card.id)}
-                    className="group flex flex-col h-full w-full rounded-2xl border border-foreground/[0.08] bg-background overflow-hidden transition-all duration-300 hover:border-foreground/[0.14] hover:shadow-[0_16px_48px_-16px_rgba(19,24,24,0.12)] text-left cursor-pointer"
-                  >
-                    {/* Top accent line */}
-                    <div className="h-[3px] w-full shrink-0" style={{ background: `linear-gradient(90deg, ${card.accent}, transparent 70%)` }} />
+              const cardClass = "group flex flex-col h-full w-full rounded-2xl border border-foreground/[0.08] bg-background overflow-hidden transition-all duration-300 hover:border-foreground/[0.14] hover:shadow-[0_16px_48px_-16px_rgba(19,24,24,0.12)] text-left cursor-pointer no-underline";
+              const cardInner = (
+                <>
+                  {/* Top accent line */}
+                  <div className="h-[3px] w-full shrink-0" style={{ background: `linear-gradient(90deg, ${card.accent}, transparent 70%)` }} />
 
-                    <div className="flex flex-col flex-1 p-7 lg:p-8">
-                      {/* Icon + label */}
-                      <div className="flex items-center gap-3 mb-6">
-                        <div
-                          className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                          style={{ background: card.accentBg }}
-                        >
-                          <Icon size={16} style={{ color: card.accent }} strokeWidth={1.75} />
-                        </div>
-                        <span
-                          className="text-[10px] font-bold tracking-[0.16em] uppercase"
-                          style={{ color: card.accent }}
-                        >
-                          {card.label}
-                        </span>
-                      </div>
-
-                      {/* Title */}
-                      <h3 className="font-display text-[21px] lg:text-[23px] font-normal tracking-tight text-foreground leading-[1.15]">
-                        {card.title}
-                      </h3>
-
-                      {/* Description */}
-                      <p className="mt-4 text-[14px] lg:text-[14.5px] leading-[1.7] text-foreground/60 flex-1">
-                        {card.description}
-                      </p>
-
-                      {/* Who it's for tag */}
-                      <div className="mt-6 pt-5 border-t border-foreground/[0.07]">
-                        <p className="text-[12.5px] leading-[1.5] text-foreground/45 italic">
-                          {card.whoFor}
-                        </p>
-                      </div>
-
-                      {/* CTA */}
+                  <div className="flex flex-col flex-1 p-7 lg:p-8">
+                    {/* Icon + label */}
+                    <div className="flex items-center gap-3 mb-6">
                       <div
-                        className="mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-semibold group/link"
+                        className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ background: card.accentBg }}
+                      >
+                        <Icon size={16} style={{ color: card.accent }} strokeWidth={1.75} />
+                      </div>
+                      <span
+                        className="text-[10px] font-bold tracking-[0.16em] uppercase"
                         style={{ color: card.accent }}
                       >
-                        {card.cta}
-                        <ArrowRight
-                          size={13}
-                          className="transition-transform duration-200 group-hover:translate-x-0.5"
-                        />
-                      </div>
+                        {card.label}
+                      </span>
                     </div>
-                  </button>
+
+                    {/* Title */}
+                    <h3 className="font-display text-[21px] lg:text-[23px] font-normal tracking-tight text-foreground leading-[1.15]">
+                      {card.title}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="mt-4 text-[14px] lg:text-[14.5px] leading-[1.7] text-foreground/60 flex-1">
+                      {card.description}
+                    </p>
+
+                    {/* Who it's for tag */}
+                    <div className="mt-6 pt-5 border-t border-foreground/[0.07]">
+                      <p className="text-[12.5px] leading-[1.5] text-foreground/45 italic">
+                        {card.whoFor}
+                      </p>
+                    </div>
+
+                    {/* CTA */}
+                    <div
+                      className="mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-semibold group/link"
+                      style={{ color: card.accent }}
+                    >
+                      {card.cta}
+                      <ArrowRight
+                        size={13}
+                        className="transition-transform duration-200 group-hover:translate-x-0.5"
+                      />
+                    </div>
+                  </div>
+                </>
+              );
+              return (
+                <Reveal key={card.id} delay={card.delay}>
+                  {card.href ? (
+                    <a href={card.href} className={cardClass}>
+                      {cardInner}
+                    </a>
+                  ) : (
+                    <button onClick={() => setOpenId(card.id)} className={cardClass}>
+                      {cardInner}
+                    </button>
+                  )}
                 </Reveal>
               );
             })}
