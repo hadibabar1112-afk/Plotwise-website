@@ -146,9 +146,9 @@ function MethodologySnippet() {
             Persona <span className="font-serif italic text-brand-deep">methodology.</span>
           </h4>
           <p className="text-[14px] leading-[1.75] text-foreground/65 max-w-2xl">
-            We build each persona around what moves a buyer, not who she is on paper. Every
-            persona names the belief blocking the purchase, the moment the product becomes
-            relevant, and the language that reframes it. As performance data comes in, the
+            We build each persona around what moves a buyer, not who they are on paper. Every
+            persona maps the barrier holding them back, the belief shift that triggers the decision,
+            and the angle that makes your product the answer. As performance data comes in, the
             model sharpens: angles that convert get reinforced, the ones that don't get retired.
           </p>
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -277,7 +277,7 @@ function ManagedSlide2({ active }: { active: boolean }) {
     ["Consideration", ["Ingredient story", "Social proof"], "Middle of funnel"],
     ["Conversion",    ["Risk reversal", "Proof-led"],       "Bottom of funnel"],
   ] as const;
-  const widths = ["100%", "84%", "66%"];
+  const widths = ["100%", "84%", "fit-content"];
   return (
     <div className={`absolute inset-0 transition-all duration-500 ${active ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-10 py-8">
@@ -291,10 +291,10 @@ function ManagedSlide2({ active }: { active: boolean }) {
             <div key={i} className={`bg-white border border-foreground/10 rounded-lg px-4 py-2.5 flex items-center justify-between gap-3 shadow-sm self-center transition-all duration-500 ${active ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-3"}`} style={{ width: widths[i], transitionDelay: active ? `${1100 + i * 200}ms` : "0ms" }}>
               <div className="flex flex-col gap-0.5">
                 <div className="text-[9.5px] tracking-[0.18em] uppercase text-foreground/60 font-medium">{name}</div>
-                <div className="text-[8.5px] tracking-[0.14em] uppercase text-brand-deep font-semibold">{funnel}</div>
+                <div className="text-[8.5px] tracking-[0.14em] uppercase text-brand-deep font-semibold whitespace-nowrap">{funnel}</div>
               </div>
-              <div className="flex gap-1.5 flex-wrap">
-                {angles.map((a) => (<span key={a} className="bg-brand-teal/15 border border-brand-teal/40 text-brand-deep px-2 py-[3px] rounded-full text-[10.5px] font-medium">{a}</span>))}
+              <div className="flex gap-1.5 flex-nowrap">
+                {angles.map((a) => (<span key={a} className="bg-brand-teal/15 border border-brand-teal/40 text-brand-deep px-2 py-[3px] rounded-full text-[10.5px] font-medium whitespace-nowrap">{a}</span>))}
               </div>
             </div>
           ))}
@@ -496,7 +496,7 @@ function SolFooter() {
           <a href="/apply" className="hover:text-foreground transition-colors no-underline">Apply</a>
         </div>
         <p className="text-[12px] text-foreground/30 sm:text-right">
-          Â© {new Date().getFullYear()} Plotwise. All rights reserved.
+          © {new Date().getFullYear()} Plotwise. All rights reserved.
         </p>
       </div>
     </footer>
@@ -790,7 +790,7 @@ export function ManagedSolutionPage() {
                 <span className="font-serif italic text-brand-deep" style={{ fontSize: "1.05em" }}>is stuck in.</span>
               </h2>
               <p className="mt-5 text-[15.5px] lg:text-[16px] leading-relaxed text-foreground/60 max-w-[560px] mx-auto">
-                You're not running out of videos. You're running out of angles â€" and nobody told you that was the problem.
+                You're not running out of videos. You're running out of angles — and nobody told you that was the problem.
               </p>
             </Reveal>
           </div>
@@ -843,7 +843,9 @@ export function ManagedSolutionPage() {
         <div className="pt-6 pb-4 lg:pt-24 lg:pb-8 text-center w-full px-6 sm:px-10 lg:px-[116px]">
           <Eyebrow className="justify-center">Managed Campaigns</Eyebrow>
           <h2 className="font-display text-[40px] sm:text-[48px] lg:text-[54px] leading-[1.05] tracking-[-0.03em] font-normal">
-            An engine that finds your next angle before your current one{" "}
+            An engine that finds your next angle
+            <br />
+            before your current one{" "}
             <span className="font-serif italic text-brand-deep" style={{ fontSize: "1.05em" }}>fatigues.</span>
           </h2>
           <p className="mt-3.5 text-[15.5px] leading-relaxed text-foreground/60 max-w-[560px] mx-auto">
